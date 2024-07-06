@@ -1,0 +1,7 @@
+*.err
+*.out
+data
+*__pycache__*
+draft.ipynb
+*.sh
+*.sh
