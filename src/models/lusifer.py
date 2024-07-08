@@ -35,6 +35,19 @@ class Lusifer(nn.Module):
             attn_implementation: str = 'flash_attention_2',
     ) -> None:
         super().__init__()
+        self.hprams = {
+            'univeral_learner_name_or_path': univeral_learner_name_or_path,
+            'encoder_name_or_path': encoder_name_or_path,
+            'univeral_learner_backbone_type': univeral_learner_backbone_type,
+            'encoder_backbone_type': encoder_backbone_type,
+            'encoder_lora_name': encoder_lora_name,
+            'universal_learner_lora_name': universal_learner_lora_name,
+            'loar_r': loar_r,
+            'lora_alpha': lora_alpha,
+            'dropout': dropout,
+            'attn_implementation': attn_implementation
+        }
+        
         self.tokenizer = self.create_tokenizer(univeral_learner_name_or_path)
         self.special_tokens = SPECIAL_TOKENS[univeral_learner_backbone_type]
 

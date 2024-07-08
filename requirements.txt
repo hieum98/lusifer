@@ -1,0 +1,149 @@
+brotli
+cffi
+einops
+faiss-cpu
+gmpy2
+ipykernel
+lightning
+mkl-fft
+mkl-random
+peft
+pip-chill
+pysocks
+pytorch-metric-learning
+ruamel.yaml
+text-dedup
+torchaudio
+torchvision
+triton
+# accelerate # Installed as dependency for peft
+# aiohttp # Installed as dependency for datasets
+# aiosignal # Installed as dependency for aiohttp
+# alabaster # Installed as dependency for sphinx
+# archspec # Installed as dependency for conda
+# asttokens # Installed as dependency for stack-data
+# attrs # Installed as dependency for aiohttp
+# babel # Installed as dependency for sphinx
+# bitarray # Installed as dependency for pybloom-live, text-dedup
+# boltons # Installed as dependency for conda, conda-libmamba-solver
+# certifi # Installed as dependency for requests
+# charset-normalizer # Installed as dependency for conda, requests
+# click # Installed as dependency for click-option-group, text-dedup
+# click-option-group # Installed as dependency for text-dedup
+# coloredlogs # Installed as dependency for onnxruntime
+# comm # Installed as dependency for ipykernel
+# conda # Installed as dependency for conda-libmamba-solver
+# conda-libmamba-solver # Installed as dependency for conda
+# conda-package-handling # Installed as dependency for conda
+# conda-package-streaming # Installed as dependency for conda-package-handling
+# datasets # Installed as dependency for text-dedup
+# debugpy # Installed as dependency for ipykernel
+# decorator # Installed as dependency for ipython
+# dill # Installed as dependency for datasets, multiprocess
+# distro # Installed as dependency for conda
+# docutils # Installed as dependency for pybtex-docutils, sphinx, sphinxcontrib-bibtex
+# executing # Installed as dependency for stack-data
+# filelock # Installed as dependency for datasets, huggingface-hub, torch, transformers, triton
+# fire # Installed as dependency for text-dedup
+# flatbuffers # Installed as dependency for onnxruntime
+# frozendict # Installed as dependency for conda
+# frozenlist # Installed as dependency for aiohttp, aiosignal
+# fsspec # Installed as dependency for datasets, huggingface-hub, lightning, pytorch-lightning, torch
+# ftfy # Installed as dependency for text-dedup
+# huggingface-hub # Installed as dependency for accelerate, datasets, peft, tokenizers, transformers
+# humanfriendly # Installed as dependency for coloredlogs
+# idna # Installed as dependency for requests, yarl
+# imagesize # Installed as dependency for sphinx
+# ipython # Installed as dependency for ipykernel
+# jaxtyping # Installed as dependency for unisim
+# jedi # Installed as dependency for ipython
+# jinja2 # Installed as dependency for sphinx, torch
+# joblib # Installed as dependency for scikit-learn
+# jsonpatch # Installed as dependency for conda
+# jsonpointer # Installed as dependency for jsonpatch
+# jupyter-client # Installed as dependency for ipykernel
+# jupyter-core # Installed as dependency for ipykernel, jupyter-client
+# latexcodec # Installed as dependency for pybtex
+# libmambapy # Installed as dependency for conda-libmamba-solver
+# lightning-utilities # Installed as dependency for lightning, pytorch-lightning, torchmetrics
+# markdown-it-py # Installed as dependency for rich
+# markupsafe # Installed as dependency for jinja2
+# matplotlib-inline # Installed as dependency for ipykernel, ipython
+# mdurl # Installed as dependency for markdown-it-py
+# menuinst # Installed as dependency for conda
+# mkl-service # Installed as dependency for mkl-fft
+# mpmath # Installed as dependency for sympy
+# multidict # Installed as dependency for aiohttp, yarl
+# multiprocess # Installed as dependency for datasets
+# nest-asyncio # Installed as dependency for ipykernel
+# networkx # Installed as dependency for torch
+# numpy # Installed as dependency for accelerate, datasets, faiss-cpu, lightning, mkl-fft, mkl-random, onnx, onnxruntime, pandas, peft, pyarrow, pytorch-lightning, pytorch-metric-learning, scikit-learn, scipy, text-dedup, torchmetrics, torchvision, transformers, unisim, usearch
+# onnx # Installed as dependency for unisim
+# onnxruntime # Installed as dependency for unisim
+# packaging # Installed as dependency for accelerate, conda, datasets, faiss-cpu, huggingface-hub, ipykernel, lightning, lightning-utilities, onnxruntime, peft, pytorch-lightning, sphinx, torchmetrics, transformers
+# pandas # Installed as dependency for datasets, unisim
+# parso # Installed as dependency for jedi
+# pexpect # Installed as dependency for ipython
+# pillow # Installed as dependency for torchvision
+# platformdirs # Installed as dependency for conda, jupyter-core
+# pluggy # Installed as dependency for conda
+# prompt-toolkit # Installed as dependency for ipython
+# protobuf # Installed as dependency for onnx, onnxruntime
+# psutil # Installed as dependency for accelerate, ipykernel, peft, text-dedup
+# ptyprocess # Installed as dependency for pexpect
+# pure-eval # Installed as dependency for stack-data
+# py4j # Installed as dependency for pyspark
+# pyarrow # Installed as dependency for datasets
+# pyarrow-hotfix # Installed as dependency for datasets
+# pybloom-live # Installed as dependency for text-dedup
+# pybtex # Installed as dependency for pybtex-docutils, sphinxcontrib-bibtex
+# pybtex-docutils # Installed as dependency for sphinxcontrib-bibtex
+# pycosat # Installed as dependency for conda
+# pycparser # Installed as dependency for cffi
+# pygments # Installed as dependency for ipython, rich, sphinx
+# pyspark # Installed as dependency for text-dedup
+# python-dateutil # Installed as dependency for jupyter-client, pandas
+# pytorch-lightning # Installed as dependency for lightning
+# pytz # Installed as dependency for pandas
+# pyyaml # Installed as dependency for accelerate, datasets, huggingface-hub, lightning, peft, pybtex, pytorch-lightning, transformers
+# pyzmq # Installed as dependency for ipykernel, jupyter-client
+# regex # Installed as dependency for text-dedup, transformers
+# requests # Installed as dependency for conda, conda-package-streaming, datasets, huggingface-hub, sphinx, transformers
+# rich # Installed as dependency for text-dedup
+# ruamel-yaml # Installed as dependency for conda
+# safetensors # Installed as dependency for accelerate, peft, transformers
+# scikit-learn # Installed as dependency for pytorch-metric-learning
+# scipy # Installed as dependency for scikit-learn, text-dedup
+# six # Installed as dependency for asttokens, fire, pybtex, python-dateutil
+# snowballstemmer # Installed as dependency for sphinx
+# sphinx # Installed as dependency for sphinxcontrib-bibtex
+# sphinxcontrib-applehelp # Installed as dependency for sphinx
+# sphinxcontrib-bibtex # Installed as dependency for text-dedup
+# sphinxcontrib-devhelp # Installed as dependency for sphinx
+# sphinxcontrib-htmlhelp # Installed as dependency for sphinx
+# sphinxcontrib-jsmath # Installed as dependency for sphinx
+# sphinxcontrib-qthelp # Installed as dependency for sphinx
+# sphinxcontrib-serializinghtml # Installed as dependency for sphinx
+# stack-data # Installed as dependency for ipython
+# sympy # Installed as dependency for onnxruntime, torch
+# tabulate # Installed as dependency for unisim
+# termcolor # Installed as dependency for fire
+# threadpoolctl # Installed as dependency for scikit-learn
+# tokenizers # Installed as dependency for transformers
+# torch # Installed as dependency for accelerate, lightning, peft, pytorch-lightning, pytorch-metric-learning, torchaudio, torchmetrics, torchvision
+# torchmetrics # Installed as dependency for lightning, pytorch-lightning
+# tornado # Installed as dependency for ipykernel, jupyter-client
+# tqdm # Installed as dependency for conda, datasets, huggingface-hub, lightning, peft, pytorch-lightning, pytorch-metric-learning, text-dedup, transformers, unisim, usearch
+# traitlets # Installed as dependency for comm, ipykernel, ipython, jupyter-client, jupyter-core, matplotlib-inline
+# transformers # Installed as dependency for peft
+# truststore # Installed as dependency for conda
+# typeguard # Installed as dependency for jaxtyping
+# typing-extensions # Installed as dependency for huggingface-hub, ipython, lightning, lightning-utilities, pytorch-lightning, torch
+# tzdata # Installed as dependency for pandas
+# unisim # Installed as dependency for text-dedup
+# urllib3 # Installed as dependency for requests, text-dedup
+# usearch # Installed as dependency for unisim
+# wcwidth # Installed as dependency for ftfy, prompt-toolkit
+# xxhash # Installed as dependency for datasets, pybloom-live, text-dedup
+# yarl # Installed as dependency for aiohttp
+# zstandard # Installed as dependency for conda, conda-package-streaming, text-dedup
