@@ -21,7 +21,7 @@ def parse_beir_format(data_dir, name, output_path):
     corpus.to_json(output_path, lines=True, orient='records')
 
 
-def mine_hard_negatives(data_dir, name, data_path):
+def mine_hard_negatives(data_dir, name, data_path, model_name='intfloat/e5-large'):
     def find_hard_negatives(example, corpus, model, tokenizer):
         query = example['query']
         positive_txt = example['positive']
@@ -58,8 +58,8 @@ def mine_hard_negatives(data_dir, name, data_path):
     else:
         corpus = datasets.load_dataset('json', data_files=os.path.join(dataset_path, 'corpus_dedup.jsonl'), split='train')
 
-    tokenizer = AutoTokenizer.from_pretrained('intfloat/e5-large')
-    model = AutoModel.from_pretrained('intfloat/e5-large')
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModel.from_pretrained(model_name)
     model = model.eval()
     model = model.to(0)
     

@@ -13,10 +13,6 @@ from transformers import (
     PreTrainedTokenizer,
     BatchEncoding
 )
-from transformers.models.auto.modeling_auto import (
-    MODEL_FOR_CAUSAL_LM_MAPPING_NAMES,
-    MODEL_FOR_SEQ_TO_SEQ_CAUSAL_LM_MAPPING_NAMES,
-)
 from peft import PeftModel, LoraConfig, TaskType, get_peft_model
 
 from src.models.modeling_bidirectional_mistral import BidirectionalMistral

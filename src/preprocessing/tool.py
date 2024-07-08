@@ -114,7 +114,7 @@ def mine_hard_negatives_for_clustering(data_path, model_name='intfloat/e5-large'
     def find_hard_negatives(example, corpus, model, tokenizer):
         query = example['query']
         positive_txt = example['positive']
-        pos_clusters = [str(x) for x in example['cluster']]
+        pos_clusters = str(example['cluster'])
         emb = get_embeddings(model=model, tokenizer=tokenizer, instruction='query:', texts=[query])
         emb = np.array(emb)
         
@@ -123,8 +123,8 @@ def mine_hard_negatives_for_clustering(data_path, model_name='intfloat/e5-large'
         results = pd.DataFrame.from_dict(samples)
         results['score'] = scores
         results['cluster'] = results['cluster'].astype(str)
-        # filter out positive samples
-        results = results[~results['cluster'].isin(pos_clusters)]
+        # filter out positive sample
+        results = results[results['cluster'] != pos_clusters]
         results = results.sort_values(by='score', ascending=False)
         # Remove top-30 highest scores rows of the results to avoid false positives
         results = results.iloc[20:140]
@@ -323,7 +323,7 @@ def load_pqa_dataset(**kwargs):
             'full_positive': example['set'][1],
         }
     
-    dataset = datasets.load_dataset('embedding-data/PAQ_pairs', split='train')
+    dataset = datasets.load_dataset('embedding-data/PAQ_pairs', split='train[:500000]')
     dataset = dataset.map(lambda x: process_example(x), num_proc=num_proc, remove_columns=dataset.column_names)
     try:
         dataset = dedup(
@@ -848,7 +848,7 @@ def load_arxiv_p2p_dataset(**kwargs):
     dataset = datasets.load_dataset('mteb/raw_arxiv', split='train')
     remove_columns = [col for col in dataset.column_names if col not in ['title', 'abstract', 'categories']]
     dataset = dataset.remove_columns(remove_columns)
-    dataset = dataset.map(lambda x: {'abstract': x['title'] + '\n' + x['abstract'], 'categories': x['categories']}, num_proc=num_proc)
+    dataset = dataset.map(lambda x: {'abstract': x['title'] + '\n' + x['abstract'], 'categories': x['categories']}, num_proc=num_proc, remove_columns=dataset.column_names)
     # filter out examples with length < 5 and length > 2000
     dataset = dataset.filter(lambda x: len(x['abstract']) > 100 and len(x['abstract']) < 2000, num_proc=num_proc)
     dataset = dedup(
@@ -867,7 +867,6 @@ def load_arxiv_p2p_dataset(**kwargs):
     # group by categories
     df = df.groupby('categories')['abstract'].apply(list).reset_index()
     dataset = datasets.Dataset.from_pandas(df)
-    # filter out examples with number of titles < 4
     dataset = dataset.filter(lambda x: len(x['abstract']) > 4, num_proc=num_proc)
     dataset = dataset.map(lambda x: {'abstract': x['abstract'][:3000]}, num_proc=num_proc)
     dataset = dataset.map(process_batch, batched=True, batch_size=100, num_proc=num_proc, remove_columns=dataset.column_names)
@@ -1145,7 +1144,7 @@ def load_nnlb_datasets(lang_pair: str, **kwargs):
 
         return {'query': query, 'positive': positive, 'full_positive': full_positive}
 
-    dataset = datasets.load_dataset('nnlb', lang_pair, split='train')
+    dataset = datasets.load_dataset('allenai/nllb', lang_pair, split='train')
     dataset = dataset.map(process_batch, batched=True, num_proc=num_proc, remove_columns=dataset.column_names)
 
     dataset = dedup(
@@ -1173,6 +1172,94 @@ def load_nnlb_datasets(lang_pair: str, **kwargs):
         threshold=0.8,
     )
     dataset = dataset.remove_columns(['full_positive'])
+    return dataset
+
+
+def load_mr_tidy_datasets(lang:str, **kwargs):
+    num_proc = get_max_num_worker_suggest()
+    def process_example(example):
+        pos = [f"{x['title']}\n{x['text']}" for x in example['positive_passages']]
+        neg = [f"{x['title']}\n{x['text']}" for x in example['negative_passages']]
+        return {
+            'query': example['query'],
+            'positive': pos,
+            'negative': neg,
+        }
+    
+    dataset = datasets.load_dataset('castorini/mr-tydi', lang)
+    dataset = dataset.map(process_example, num_proc=num_proc)
+    all_dataset = []
+    for split in dataset.values():
+        remove_columns = [col for col in split.column_names if col not in ['query', 'positive', 'negative']]
+        split = split.remove_columns(remove_columns)
+        # filter out examples with number of positive < 1 and number of negative < 1
+        split = split.filter(lambda x: len(x['positive']) > 0 and len(x['negative']) > 0, num_proc=num_proc)
+        all_dataset.append(split)
+    dataset = datasets.concatenate_datasets(all_dataset)
+    
+    try:
+        dataset = dedup(
+            column='query',
+            data_path=None,
+            num_proc=num_proc,
+            ds=dataset,
+            batch_size=100_000,
+            idx_column=None,
+            ngram=5,
+            min_length=5,
+            num_perm=1000,
+            threshold=0.8,
+        )
+    except:
+        print("Deduplication failed for data in MR-TyDi")
+        pass
+
+    return dataset
+
+
+def load_miracl_datasets(lang:str, **kwargs):
+    num_proc = get_max_num_worker_suggest()
+    def process_example(example):
+        if len(example['positive_passages']) == 0:
+            pos = []
+        else:
+            pos = [f"{x['title']}\n{x['text']}" for x in example['positive_passages']]
+        if len(example['negative_passages']) == 0:
+            neg = []
+        else:
+            neg = [f"{x['title']}\n{x['text']}" for x in example['negative_passages']]
+        return {
+            'query': example['query'],
+            'positive': pos,
+            'negative': neg,
+        }
+    dataset = datasets.load_dataset('miracl/miracl', lang, trust_remote_code=True)
+    all_dataset = []
+    for split in dataset.values():
+        split = split.filter(lambda x: len(x['positive_passages']) > 0 and len(x['negative_passages']) > 0, num_proc=num_proc)
+        split = split.map(process_example, num_proc=num_proc)
+        remove_columns = [col for col in split.column_names if col not in ['query', 'positive', 'negative']]
+        split = split.remove_columns(remove_columns)
+        # filter out examples with number of positive < 1 and number of negative < 1
+        split = split.filter(lambda x: len(x['positive']) > 0 and len(x['negative']) > 0, num_proc=num_proc)
+        all_dataset.append(split)
+    dataset = datasets.concatenate_datasets(all_dataset)
+    try:
+        dataset = dedup(
+            column='query',
+            data_path=None,
+            num_proc=num_proc,
+            ds=dataset,
+            batch_size=100_000,
+            idx_column=None,
+            ngram=5,
+            min_length=5,
+            num_perm=1000,
+            threshold=0.8,
+        )
+    except:
+        print("Deduplication failed for data in MIRACL")
+        pass
     return dataset
 
 
