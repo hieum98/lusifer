@@ -56,7 +56,7 @@ def mine_hard_negatives(data_dir, name, data_path, model_name='intfloat/e5-large
             all_corpus.append(corpus)
             corpus = datasets.concatenate_datasets(all_corpus)
     else:
-        corpus = datasets.load_dataset('json', data_files=os.path.join(dataset_path, 'corpus_dedup.jsonl'), split='train')
+        corpus = datasets.load_dataset('json', data_files=os.path.join(dataset_path, 'corpus_dedup.jsonl'), split='train[:1000000]')
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModel.from_pretrained(model_name)
