@@ -1,8 +1,9 @@
+import bisect
 import random
 from typing import Dict, Tuple
 import einops
 import torch
-from torch.utils.data.dataset import Dataset
+from torch.utils.data.dataset import Dataset, ConcatDataset
 from transformers import PreTrainedTokenizer, BatchEncoding
 import datasets
 
@@ -20,6 +21,7 @@ class RepLearningDataset(Dataset):
             ):
         super().__init__()
         data_path = DATA[data_name]['data_path']
+        self.data_name = data_name
         self.instruction = DATA[data_name]['instruction']
         self.number_training_samples = number_training_samples
         self.neg_per_sample = neg_per_sample
@@ -48,6 +50,30 @@ class RepLearningDataset(Dataset):
             'instruction': self.instruction,
         }
     
+
+class ConcatRepLearningDataset(ConcatDataset):
+    """
+    An extension of ConcatDataset that guarantees that each example has a unique query_label.
+    """
+    def __getitem__(self, idx):
+        if idx < 0:
+            if -idx > len(self):
+                raise ValueError(
+                    "absolute value of index should not exceed dataset length"
+                )
+            idx = len(self) + idx
+        dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
+        if dataset_idx == 0:
+            sample_idx = idx
+        else:
+            sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
+        example =  self.datasets[dataset_idx][sample_idx]
+
+        # Update the query_label to be unique across all datasets
+        example['query_label'] = idx
+        return example
+
+
 class RepLearningCollator:
     def __init__(
             self,
@@ -83,10 +109,9 @@ class RepLearningCollator:
             example = self.query_format.format(instruction=instruction, example=example)
         else:
             example = self.candidate_format.format(example=example)
-        
         model_inputs = self.tokenizer(
             example,
-            padding="max_length",
+            padding="longest",
             truncation=True,
             max_length=self.max_seq_length,
             return_tensors=None,

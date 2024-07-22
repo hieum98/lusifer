@@ -1,12 +1,13 @@
 import os
 from typing import List
 import torch
-from torch.utils.data import DataLoader, ConcatDataset, Sampler
+from torch.utils.data import DataLoader, Sampler
 import lightning as L
 from datasets import load_dataset
 from transformers import PreTrainedTokenizer
 
-from src.data_modules.rep_learning_dataset import RepLearningDataset, RepLearningCollator
+from src.data_modules.constants import *
+from src.data_modules.rep_learning_dataset import RepLearningDataset, ConcatRepLearningDataset, RepLearningCollator
 from src.special_tokens import SPECIAL_TOKENS
 
 
@@ -119,12 +120,40 @@ class ConcatedDataSampler(Sampler):
 class RepLearningDataModule(L.LightningDataModule):
     def __init__(
             self, 
-            data_names: List[str], 
+            langs: List[str], 
             num_workers: int = 4,
             seed: int = 777
             ):
         super().__init__()
-        self.data_names = data_names
+        lang_to_data = {
+            'en': EN,
+            'ar': AR,
+            'bn': BN,
+            'de': DE,
+            'es': ES,
+            'fa': FA,
+            'fi': FI,
+            'fr': FR,
+            'hi': HI,
+            'id': ID,
+            'ja': JA,
+            'ko': KO,
+            'ru': RU,
+            'sw': SW,
+            'te': TE,
+            'th': TH,
+            'vi': VI,
+            'yo': YO,
+            'zh': ZH,
+        }
+
+        self.data_names = []
+        if langs == ['all']:
+            for l in lang_to_data.keys():
+                self.data_names.extend(lang_to_data[l])
+        else:
+            for l in langs:
+                self.data_names.extend(lang_to_data[l])
         self.num_workers = num_workers
         self.seed = seed
     
@@ -172,7 +201,7 @@ class RepLearningDataModule(L.LightningDataModule):
             else:
                 print(f"Skipping {data_name} dataset as it has no samples.")
         assert len(train_datasets) > 0, f"No datasets loaded. Please check the data names: {self.data_names}"
-        self.train_ds = ConcatDataset(train_datasets)
+        self.train_ds = ConcatRepLearningDataset(train_datasets)
     
     def train_dataloader(self) -> DataLoader:
         max_num_worker_suggest = 1
@@ -206,5 +235,28 @@ class RepLearningDataModule(L.LightningDataModule):
             collate_fn=collator,
         )
 
+
+if __name__=='__main__':
+    from transformers import AutoTokenizer
+
+    tokenizer = AutoTokenizer.from_pretrained('google/flan-t5-xl')
+    dm = RepLearningDataModule(langs=['all'], num_workers=40, seed=777)
+    dm.connect(
+        world_size=1,
+        global_rank=0,
+        tokenizer=tokenizer,
+        special_tokens_set='t5',
+        global_batch_size=32,
+        max_seq_length=512,
+        number_training_samples=1_000_000,
+        neg_per_sample=32,
+        pos_per_sample=1,
+    )
+    dm.setup()
+    dl = dm.train_dataloader()
+    for batch in dl: 
+        breakpoint()
+        print(batch)
+        break
 
 

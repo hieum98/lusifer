@@ -8,7 +8,7 @@ from functools import partial
 import torch
 from torch.distributed.fsdp.api import ShardingStrategy
 import lightning as L
-from lightning.fabric.strategies import FSDPStrategy
+from lightning.fabric.strategies import FSDPStrategy, DDPStrategy
 from lightning import seed_everything
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from transformers.models.mistral.modeling_mistral import MistralDecoderLayer
@@ -191,13 +191,9 @@ def main(
 
 def setup(data_args: DataArguments, model_args: ModelArguments, training_args: TrainingArguments):
     seed_everything(training_args.seed)
-    
-    if data_args.dataset_name == 'en_only':
-        dataset_names = []
-    elif data_args.dataset_name == 'all':
-        dataset_names = []
+
     train_data = RepLearningDataModule(
-        data_names=dataset_names,
+        langs=data_args.langs,
         num_workers=data_args.num_workers,
         seed=training_args.seed
     )
@@ -230,7 +226,12 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
                 limit_all_gathers=True, # See https://github.com/pytorch/pytorch/issues/91165
                 state_dict_type="full",
                 cpu_offload=training_args.use_cpu_offload,
-                timeout=datetime.timedelta(hours=2), # makeing large timeout for model evaluation
+                timeout=datetime.timedelta(hours=5), # makeing large timeout for model evaluation
+            )
+        elif training_args.strategy == 'ddp':
+            strategy = DDPStrategy(
+                find_unused_parameters=True, 
+                timeout=datetime.timedelta(hours=5), # makeing large timeout for model evaluation
             )
     else:
         strategy = "auto"
@@ -266,6 +267,8 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
 
 
 if __name__ == "__main__":
+    os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
+    
     import argparse
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter

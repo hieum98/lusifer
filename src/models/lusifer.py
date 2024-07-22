@@ -11,8 +11,9 @@ from transformers import (
     BitsAndBytesConfig,
     PreTrainedModel,
     PreTrainedTokenizer,
-    BatchEncoding
+    BatchEncoding,
 )
+from transformers.models.t5.modeling_t5 import T5EncoderModel
 from peft import PeftModel, LoraConfig, TaskType, get_peft_model
 
 from src.models.modeling_bidirectional_mistral import BidirectionalMistral
@@ -80,7 +81,7 @@ class Lusifer(nn.Module):
             nn.ReLU(),
             nn.Linear(self.encoder_dim, self.encoder_dim),
         )
-        self.ouput_projection = nn.Sequential(
+        self.output_projection = nn.Sequential(
             nn.Linear(self.encoder_dim, self.encoder_dim),
             nn.ReLU(),
             nn.Linear(self.encoder_dim, self.encoder_dim),
@@ -141,23 +142,22 @@ class Lusifer(nn.Module):
             bnb_config = None
         
         if not is_llm_bidirectional:
-            transformer: PreTrainedModel = AutoModel.from_pretrained(
-                model_name_or_path,
-                config=config,
-                quantization_config=bnb_config,
-                attn_implementation=attn_implementation
-            )
+            if 't5' in model_name_or_path:
+                model_class = T5EncoderModel
+            else:
+                model_class = AutoModel
         else:
             if backbone_type == "mistral":
                 model_class = BidirectionalMistral
             else:
                 raise NotImplementedError(f"Backbone type {backbone_type} not implemented")
-            transformer = model_class.from_pretrained(
-                model_name_or_path,
-                config=config,
-                quantization_config=bnb_config,
-                attn_implementation=attn_implementation
-            )
+            
+        transformer: PreTrainedModel = model_class.from_pretrained(
+            model_name_or_path,
+            config=config,
+            quantization_config=bnb_config,
+            attn_implementation=attn_implementation
+        )
 
         if use_lora:
             if target_modules == "all":
@@ -254,7 +254,7 @@ class Lusifer(nn.Module):
             attention_mask=attention_mask,
             prompt_length=prompt_length,
         ) # (batch_size, hidden_size)
-        projected_representation = self.ouput_projection(sentence_representation) # (batch_size, hidden_size)
+        projected_representation = self.output_projection(sentence_representation) # (batch_size, hidden_size)
 
         return {
             'reps': sentence_representation,

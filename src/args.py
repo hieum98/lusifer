@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
+from typing import List
 
 
 class DataArguments:
-    dataset_name: str = field(
-        metadata={"help": "The name of the dataset."}
+    langs: List[str] = field(
+        metadata={"help": "The languages to use for training."}
     )
     max_seq_length: int = field(
         default=512,
