@@ -5,3 +5,5 @@ data
 draft.ipynb
 *.sh
 *.sh
+wandb
+output

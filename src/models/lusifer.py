@@ -28,6 +28,8 @@ class Lusifer(nn.Module):
             encoder_name_or_path: str,
             univeral_learner_backbone_type: str = 't5',
             encoder_backbone_type: str = 'mistral',
+            is_freeze_univeral_learner: bool = True,
+            pooling_method: str='mean',
             encoder_lora_name: str = 'encoder_lora',
             universal_learner_lora_name: str = 'univeral_learner_lora',
             loar_r: int = 16,
@@ -41,6 +43,8 @@ class Lusifer(nn.Module):
             'encoder_name_or_path': encoder_name_or_path,
             'univeral_learner_backbone_type': univeral_learner_backbone_type,
             'encoder_backbone_type': encoder_backbone_type,
+            'is_freeze_univeral_learner': is_freeze_univeral_learner,
+            'pooling_method': pooling_method,
             'encoder_lora_name': encoder_lora_name,
             'universal_learner_lora_name': universal_learner_lora_name,
             'loar_r': loar_r,
@@ -48,6 +52,7 @@ class Lusifer(nn.Module):
             'dropout': dropout,
             'attn_implementation': attn_implementation
         }
+        self.is_freeze_univeral_learner = is_freeze_univeral_learner
         
         self.tokenizer = self.create_tokenizer(univeral_learner_name_or_path)
         self.special_tokens = SPECIAL_TOKENS[univeral_learner_backbone_type]
@@ -61,6 +66,11 @@ class Lusifer(nn.Module):
             adapter_name=universal_learner_lora_name,
             attn_implementation=attn_implementation,
         )
+        if self.is_freeze_univeral_learner and universal_learner_lora_name != None:
+            print("Warning: You are freezing the univeral learner but the model has an adapter. Set is_freeze_univeral_learner=False to train the adapter.")
+            self.is_freeze_univeral_learner = False
+        if self.is_freeze_univeral_learner:
+            self.univeral_learner.requires_grad_(False)
         self.univeral_learner_dim = self.univeral_learner.config.hidden_size
 
         self.encoder = self.create_transformer(
@@ -75,6 +85,8 @@ class Lusifer(nn.Module):
             attn_implementation=attn_implementation,
         )
         self.encoder_dim = self.encoder.config.hidden_size
+
+        self.pooling_method = pooling_method
 
         self.projection = nn.Sequential(
             nn.Linear(self.univeral_learner_dim, self.encoder_dim),
@@ -141,9 +153,21 @@ class Lusifer(nn.Module):
         else:
             bnb_config = None
         
+        kwargs = {
+            'pretrained_model_name_or_path': model_name_or_path,
+            'config': config,
+            'quantization_config': bnb_config,
+            'torch_dtype': torch.bfloat16 if attn_implementation == "flash_attention_2" else None,
+            'attn_implementation': attn_implementation,
+        }
         if not is_llm_bidirectional:
             if 't5' in model_name_or_path:
                 model_class = T5EncoderModel
+                kwargs = {
+                    'pretrained_model_name_or_path': model_name_or_path, 
+                    'config': config,
+                    'torch_dtype': torch.bfloat16 if attn_implementation == "flash_attention_2" else None,
+                    }
             else:
                 model_class = AutoModel
         else:
@@ -152,12 +176,7 @@ class Lusifer(nn.Module):
             else:
                 raise NotImplementedError(f"Backbone type {backbone_type} not implemented")
             
-        transformer: PreTrainedModel = model_class.from_pretrained(
-            model_name_or_path,
-            config=config,
-            quantization_config=bnb_config,
-            attn_implementation=attn_implementation
-        )
+        transformer: PreTrainedModel = model_class.from_pretrained(**kwargs)
 
         if use_lora:
             if target_modules == "all":
@@ -245,7 +264,7 @@ class Lusifer(nn.Module):
 
         # feed the univeral representation to the encoder
         encoder_representation = self.encoder(
-            input_embeds=univeral_representation,
+            inputs_embeds=univeral_representation,
             attention_mask=attention_mask,
             return_dict=True
         ).last_hidden_state # (batch_size, seq_len, hidden_size)

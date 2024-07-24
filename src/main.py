@@ -16,9 +16,10 @@ from transformers.models.t5.modeling_t5 import T5Block
 
 from src.data_modules.rep_learning_datamodule import RepLearningDataModule
 from src.models.lusifer import Lusifer
+from src.models.utils import get_wrapping_policy, get_activation_checkpointing_policy
 from src.trainer.gradcache_trainer import GradCacheTrainer
 from src.args import DataArguments, ModelArguments, TrainingArguments
-from src.trainer.utils import choose_logger, get_cosine_schedule_with_warmup, get_trainable_parameters, get_wrapping_policy
+from src.trainer.utils import choose_logger, get_cosine_schedule_with_warmup, get_trainable_parameters, trainable_filter
 
 
 backbone_to_layer_type = {
@@ -74,6 +75,7 @@ def main(
             encoder_name_or_path=model_args.encoder_name_or_path,
             univeral_learner_backbone_type=model_args.univeral_learner_backbone_type,
             encoder_backbone_type=model_args.encoder_backbone_type,
+            is_freeze_univeral_learner=model_args.is_freeze_univeral_learner,
             encoder_lora_name=model_args.encoder_lora_name,
             universal_learner_lora_name=model_args.universal_learner_lora_name,
             loar_r=model_args.loar_r,
@@ -83,16 +85,13 @@ def main(
         )
     tokenizer = model.tokenizer
     trainable_params, all_param, trainable_params_percentage, trainable_layers = get_trainable_parameters(model)
-    def trainable_filter(key: str, value: Any, trainable_layers: List[str]) -> bool:
-        print("Layer to save: ", key)
-        return any([layer in key for layer in trainable_layers])
-    filter_fn = partial(trainable_filter, trainable_layer=trainable_layers)
-    model = fabric.setup_module(model)
-    fabric.print("Model after wrapping")
-    fabric.print(model)
+    filter_fn = partial(trainable_filter, trainable_layers=trainable_layers) if trainable_params_percentage < 100 else None
     fabric.print(f"Number of trainable parameters: {trainable_params/1e6:.2f}M")
     fabric.print(f"Total number of parameters: {all_param/1e6:.2f}M")
     fabric.print(f"Percentage of trainable parameters: {trainable_params_percentage:.2f}%")
+    model = fabric.setup_module(model)
+    fabric.print("Model after wrapping")
+    fabric.print(model)
 
     # Prepare the dataloaders
     train_dataloader = get_dataloaders(
@@ -146,7 +145,7 @@ def main(
         fabric=fabric,
         loss_type=training_args.loss_type,
         temperature=training_args.temperature,
-        normalize=training_args.normalize,
+        is_distance=training_args.is_distance,
         use_miner=training_args.use_miner,
         cross_batch_loss=training_args.use_cross_batch_loss,
         chunk_size=training_args.gc_chunk_size,
@@ -215,13 +214,14 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
             else:
                 raise ValueError("Invalid sharding strategy")
 
-            backbone_layer_types = [backbone_to_layer_type[model_args.encoder_backbone_type], 
-                                    backbone_to_layer_type[model_args.univeral_learner_backbone_type]]
+            backbone_layer_types = {backbone_to_layer_type[model_args.encoder_backbone_type], 
+                                    backbone_to_layer_type[model_args.univeral_learner_backbone_type]}
             wrapping_policy = get_wrapping_policy(backbone_layer_types)
+            activation_checkpointing_policy = get_activation_checkpointing_policy(backbone_layer_types)
             
             strategy = FSDPStrategy(
                 auto_wrap_policy=wrapping_policy,
-                activation_checkpointing_policy=wrapping_policy if training_args.activation_checkpointing else None,
+                activation_checkpointing_policy=activation_checkpointing_policy if training_args.activation_checkpointing else None,
                 sharding_strategy=sharding_strategy,
                 limit_all_gathers=True, # See https://github.com/pytorch/pytorch/issues/91165
                 state_dict_type="full",
@@ -245,8 +245,8 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
         log_interval=training_args.log_interval,
     )
 
-    # check whether gpu is support bf16
-    if not torch.cuda.is_bf16_supported() and training_args.precision == 'bf16':
+     # check whether gpu is support bf16
+    if not torch.cuda.is_bf16_supported():
         training_args.precision = '16-mixed'
 
     fabric = L.Fabric(
@@ -290,6 +290,9 @@ if __name__ == "__main__":
         "--learning_rate", type=float, default=1e-5, help="Learning rate"
     )
     parser.add_argument(
+        "--min_learning_rate", type=float, default=0.0, help="Minimum learning rate"
+    )
+    parser.add_argument(
         "--checkpoint_dir", type=str, default="checkpoints", help="Directory to save checkpoints"
     )
     parser.add_argument(
@@ -307,6 +310,7 @@ if __name__ == "__main__":
     training_args.devices = args.devices
     training_args.gc_chunk_size = args.gc_chunk_size
     training_args.learning_rate = args.learning_rate
+    training_args.min_learning_rate = args.min_learning_rate
     training_args.checkpoint_dir = args.checkpoint_dir
     training_args.checkpoint_file = args.checkpoint_file
 

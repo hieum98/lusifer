@@ -2,8 +2,10 @@ from dataclasses import dataclass, field
 from typing import List
 
 
+@dataclass
 class DataArguments:
     langs: List[str] = field(
+        default_factory=lambda: ['en'],
         metadata={"help": "The languages to use for training."}
     )
     max_seq_length: int = field(
@@ -28,6 +30,7 @@ class DataArguments:
     )
 
 
+@dataclass
 class ModelArguments:
     univeral_learner_name_or_path: str = field(
         default='google-t5/t5-large',
@@ -45,12 +48,16 @@ class ModelArguments:
         default='mistral',
         metadata={"help": "The type of the encoder backbone."}
     )
+    is_freeze_univeral_learner: bool = field(
+        default=True,
+        metadata={"help": "Whether to freeze the universal learner model or not."} 
+    )
     encoder_lora_name: str = field(
-        default='encoder_lora',
+        default=None,
         metadata={"help": "The name of the encoder LoRA layer."}
     )
     universal_learner_lora_name: str = field(
-        default='universal_learner_lora',
+        default=None,
         metadata={"help": "The name of the universal learner LoRA layer."}
     )
     loar_r: int = field(
@@ -71,6 +78,7 @@ class ModelArguments:
     )
 
 
+@dataclass
 class TrainingArguments:
     seed: int = field(
         default=777,
@@ -122,9 +130,9 @@ class TrainingArguments:
         default=True,
         metadata={"help": "Whether to use miner or not. The MultiSimilarityMiner will be used."}
     )
-    normalize: bool = field(
+    is_distance: bool = field(
         default=True,
-        metadata={"help": "Whether to normalize the embeddings or not"}
+        metadata={"help": "Whether to use distance metric or not. If True, LpDistance will be used, otherwise CosineSimilarity."}
     )
     use_cross_batch_loss: bool = field(
         default=True,

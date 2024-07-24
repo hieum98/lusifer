@@ -179,6 +179,7 @@ class RepLearningDataModule(L.LightningDataModule):
         self.neg_per_sample = neg_per_sample
         self.pos_per_sample = pos_per_sample
         self.batch_size = self.global_batch_size // self.world_size
+        assert self.global_batch_size % self.world_size == 0, "Global batch size must be divisible by world size."
         assert self.batch_size > 0, "Batch size must be greater than 0. i.e. world_size must be less than or equal to global_batch_size"
     
     def set_epoch(self, epoch: int) -> None:

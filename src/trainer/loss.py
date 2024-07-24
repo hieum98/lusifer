@@ -91,13 +91,13 @@ class ContrastiveLoss:
             self,
             loss_type: str = 'NTXentLoss', # 'NTXentLoss' or 'SupConLoss'
             temperature: float = 0.05,
-            normalize: bool = True,
+            is_distance: bool = True,
             use_miner: bool = False,
             cross_batch_loss: bool = True,
             ) -> None:
         self.cross_batch_loss = cross_batch_loss
 
-        distance = distances.CosineSimilarity() if normalize else distances.LpDistance(normalize_embeddings=False)
+        distance = distances.LpDistance(normalize_embeddings=True) if is_distance else distances.CosineSimilarity()
         if loss_type == 'NTXentLoss':
             self.loss_fn = losses.NTXentLoss(temperature=temperature, distance=distance)
         elif loss_type == 'SupConLoss':
@@ -107,7 +107,7 @@ class ContrastiveLoss:
 
         if use_miner:
             self.miner = miners.PairMarginMiner(
-                pos_margin = 1.0 if normalize else 0.0, # under 1.0 for cosine similarity or over 0.0 for LpDistance will be considered as hard positive 
+                pos_margin = 0.0 if is_distance else 1.0, # under 1.0 for cosine similarity or over 0.0 for LpDistance will be considered as hard positive 
                 neg_margin = 0.5, # over 0.5 for cosine similarity or under 0.5 for LpDistance will be considered as hard negative.
                 distance=distance
                 )
@@ -140,6 +140,7 @@ class ContrastiveLoss:
             full_neg_embeds = torch.cat(full_neg_embeds, dim=0) # (num_all_neg, embed_dim)
             max_idx = torch.max(full_q_labels)
             full_neg_labels = torch.arange(full_neg_embeds.size(0), device=full_neg_embeds.device) + max_idx + 1 # (num_all_neg,)
+            print(full_q_labels, full_pos_labels, full_neg_labels)
             
             full_labels = torch.cat([full_q_labels, full_pos_labels, full_neg_labels], dim=0)
             full_embeds = torch.cat([full_q_embeds, full_pos_embeds, full_neg_embeds], dim=0)

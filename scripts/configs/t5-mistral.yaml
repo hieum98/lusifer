@@ -1,0 +1,54 @@
+# Data args
+langs:
+  - all
+max_seq_length: 512
+number_training_samples: 100_000
+neg_per_sample: 32
+pos_per_sample: 3
+num_workers: 8
+
+# Model args
+univeral_learner_name_or_path: google/flan-t5-xl
+encoder_name_or_path: mistralai/Mistral-7B-Instruct-v0.3
+univeral_learner_backbone_type: t5
+encoder_backbone_type: mistral
+is_freeze_univeral_learner: True
+# Lora args
+encoder_lora_name: encoder_lora
+# universal_learner_lora_name: universal_learner_lora # Not configured, default is None
+loar_r: 16
+lora_alpha: 32
+# Other args
+dropout: 0.1
+attn_implementation: 'flash_attention_2'
+
+# Training args
+seed: 777
+# Training strategy args
+precision: 'bf16-true'
+strategy: 'fsdp'
+sharding_strategy: 'full_shard'
+activation_checkpointing: True
+use_cpu_offload: False
+quantization: False
+# Loss args
+loss_type: 'NTXentLoss'
+temperature: 0.05
+use_miner: True
+is_distance: True
+use_cross_batch_loss: True
+# Optimization args
+global_batch_size: 512
+eval_batch_size: 32
+max_epochs: 3
+max_steps: 10000
+weight_decay: 0.0
+warmpup_proportion: 0.1
+# grad_norm_clip: 1.0 # Not configured, default is None
+# Checkpoint args
+checkpoint_interval: 200
+logger_type: 'wandb'
+logger_name: 't5-mistral'
+
+
+

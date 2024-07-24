@@ -38,7 +38,7 @@ class GradCacheTrainer:
             fabric: L.Fabric,
             loss_type: str = 'NTXentLoss',
             temperature: float = 0.05,
-            normalize: bool = True,
+            is_distance: bool = True,
             use_miner: bool = False,
             cross_batch_loss: bool = True,
             chunk_size: Optional[int] = 1,
@@ -50,7 +50,7 @@ class GradCacheTrainer:
         self.loss_fn = ContrastiveLoss(
             loss_type=loss_type,
             temperature=temperature,
-            normalize=normalize,
+            is_distance=is_distance,
             use_miner=use_miner,
             cross_batch_loss=cross_batch_loss,
         )
@@ -402,6 +402,8 @@ class GradCacheTrainer:
                     eval_model = eval_model.to(0)
                     # Eval logic here
                     self.fabric.print("Model evaluation finished")
+                    del eval_model
+                    torch.cuda.empty_cache()
                 
                 self.fabric.barrier()
         return checkpoint_path
