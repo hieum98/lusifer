@@ -140,7 +140,6 @@ class ContrastiveLoss:
             full_neg_embeds = torch.cat(full_neg_embeds, dim=0) # (num_all_neg, embed_dim)
             max_idx = torch.max(full_q_labels)
             full_neg_labels = torch.arange(full_neg_embeds.size(0), device=full_neg_embeds.device) + max_idx + 1 # (num_all_neg,)
-            print(full_q_labels, full_pos_labels, full_neg_labels)
             
             full_labels = torch.cat([full_q_labels, full_pos_labels, full_neg_labels], dim=0)
             full_embeds = torch.cat([full_q_embeds, full_pos_embeds, full_neg_embeds], dim=0)
