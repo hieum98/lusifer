@@ -154,21 +154,29 @@ class RepLearningCollator:
         batch_query = [self.tokenize_example(example=x[1], is_query=True, instruction=x[0]) for x in batch_query]
         batch_pos = [self.tokenize_example(example=x, is_query=False) for x in batch_pos]
         batch_neg = [self.tokenize_example(example=x, is_query=False) for x in batch_neg]
-        batch_query = self.tokenizer.pad(batch_query, return_tensors='pt', pad_to_multiple_of=8)
-        batch_pos = self.tokenizer.pad(batch_pos, return_tensors='pt', pad_to_multiple_of=8)
-        batch_neg = self.tokenizer.pad(batch_neg, return_tensors='pt', pad_to_multiple_of=8)
+        len_q = len(batch_query)
+        len_p = len(batch_pos)
+        len_n = len(batch_neg)
+        batch = batch_query + batch_pos + batch_neg
+        batch = self.tokenizer.pad(batch, return_tensors='pt', pad_to_multiple_of=8) 
 
-        query_input_ids = batch_query['input_ids'] # (batch_size, seq_length)
-        query_attention_mask = batch_query['attention_mask'] 
-        query_prompt_length = batch_query['prompt_length'] # (batch_size,)
+        query_input_ids = batch['input_ids'][:len_q]
+        query_attention_mask = batch['attention_mask'][:len_q]
+        query_prompt_length = batch['prompt_length'][:len_q]
 
-        pos_input_ids = einops.rearrange(batch_pos['input_ids'], '(b n) l -> b n l', b=batch_size, n=min_pos_per_sample)
-        pos_attention_mask = einops.rearrange(batch_pos['attention_mask'], '(b n) l -> b n l', b=batch_size, n=min_pos_per_sample)
-        pos_prompt_length = einops.rearrange(batch_pos['prompt_length'], '(b n) -> b n', b=batch_size, n=min_pos_per_sample)
+        pos_input_ids = batch['input_ids'][len_q:len_q+len_p]
+        pos_input_ids = einops.rearrange(pos_input_ids, '(b n) l -> b n l', b=batch_size, n=min_pos_per_sample)
+        pos_attention_mask = batch['attention_mask'][len_q:len_q+len_p]
+        pos_attention_mask = einops.rearrange(pos_attention_mask, '(b n) l -> b n l', b=batch_size, n=min_pos_per_sample)
+        pos_prompt_length = batch['prompt_length'][len_q:len_q+len_p]
+        pos_prompt_length = einops.rearrange(pos_prompt_length, '(b n) -> b n', b=batch_size, n=min_pos_per_sample)
 
-        neg_input_ids = einops.rearrange(batch_neg['input_ids'], '(b n) l -> b n l', b=batch_size, n=min_neg_per_sample)
-        neg_attention_mask = einops.rearrange(batch_neg['attention_mask'], '(b n) l -> b n l', b=batch_size, n=min_neg_per_sample)
-        neg_prompt_length = einops.rearrange(batch_neg['prompt_length'], '(b n) -> b n', b=batch_size, n=min_neg_per_sample)
+        neg_input_ids = batch['input_ids'][len_q+len_p:]
+        neg_input_ids = einops.rearrange(neg_input_ids, '(b n) l -> b n l', b=batch_size, n=min_neg_per_sample)
+        neg_attention_mask = batch['attention_mask'][len_q+len_p:]
+        neg_attention_mask = einops.rearrange(neg_attention_mask, '(b n) l -> b n l', b=batch_size, n=min_neg_per_sample)
+        neg_prompt_length = batch['prompt_length'][len_q+len_p:]
+        neg_prompt_length = einops.rearrange(neg_prompt_length, '(b n) -> b n', b=batch_size, n=min_neg_per_sample)
 
         return {
             'query_labels': query_labels, # (batch_size,)

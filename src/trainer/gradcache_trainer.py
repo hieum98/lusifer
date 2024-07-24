@@ -102,25 +102,37 @@ class GradCacheTrainer:
             B, P, _ = pos_input_ids.size()
             B, N, _ = neg_input_ids.size()
 
-            query_projections = model(
-                input_ids=query_input_ids,
-                attention_mask=query_attention_mask,
-                prompt_length=query_prompt_length,
-            )['projection'] # (batch_size, embed_dim)
+            model_input_ids = torch.cat([
+                query_input_ids.unsqueeze(1), # (batch_size, 1, seq_len)
+                pos_input_ids, # (batch_size, num_pos, seq_len)
+                neg_input_ids, # (batch_size, num_neg, seq_len)
+            ], dim=1) # (batch_size, 1 + num_pos + num_neg, seq_len)
+            model_input_ids = einops.rearrange(model_input_ids, 'b n l -> (b n) l', b=B, n=1+P+N)
 
-            pos_projections = model(
-                input_ids=einops.rearrange(pos_input_ids, 'b n l -> (b n) l'),
-                attention_mask=einops.rearrange(pos_attention_mask, 'b n l -> (b n) l'),
-                prompt_length=einops.rearrange(pos_prompt_length, 'b n -> (b n)'),
-            )['projection'] # (batch_size * num_pos, embed_dim)
-            pos_projections = einops.rearrange(pos_projections, '(b n) d -> b n d', b=B, n=P)
+            model_attention_mask = torch.cat([
+                query_attention_mask.unsqueeze(1), # (batch_size, 1, seq_len)
+                pos_attention_mask, # (batch_size, num_pos, seq_len)
+                neg_attention_mask, # (batch_size, num_neg, seq_len)
+            ], dim=1)
+            model_attention_mask = einops.rearrange(model_attention_mask, 'b n l -> (b n) l', b=B, n=1+P+N)
 
-            neg_projections = model(
-                input_ids=einops.rearrange(neg_input_ids, 'b n l -> (b n) l'),
-                attention_mask=einops.rearrange(neg_attention_mask, 'b n l -> (b n) l'),
-                prompt_length=einops.rearrange(neg_prompt_length, 'b n -> (b n)'),
-            )['projection'] # (batch_size * num_neg, embed_dim)
-            neg_projections = einops.rearrange(neg_projections, '(b n) d -> b n d', b=B, n=N)
+            model_prompt_length = torch.cat([
+                query_prompt_length.unsqueeze(1), # (batch_size, 1)
+                pos_prompt_length, # (batch_size, num_pos)
+                neg_prompt_length, # (batch_size, num_neg)
+            ], dim=1)
+            model_prompt_length = einops.rearrange(model_prompt_length, 'b n -> (b n)', b=B, n=1+P+N)
+
+            # Forward pass
+            projections = model(
+                input_ids=model_input_ids,
+                attention_mask=model_attention_mask,
+                prompt_length=model_prompt_length,
+            )['projection'] # (batch_size * (1 + num_pos + num_neg), embed_dim)
+            projections = einops.rearrange(projections, '(b n) d -> b n d', b=B, n=1+P+N)
+            query_projections = projections[:, 0] # (batch_size, embed_dim)
+            pos_projections = projections[:, 1:1+P] # (batch_size, num_pos, embed_dim)
+            neg_projections = projections[:, 1+P:] # (batch_size, num_neg, embed_dim)
         
         return query_projections, pos_projections, neg_projections, rnd_state
     
@@ -163,9 +175,18 @@ class GradCacheTrainer:
         :param query_labels: query labels
         :return: cache: gradient cache, con_loss: contrastive loss value
         """
-        query_projections = query_projections.detach().requires_grad_(True)
-        pos_projections = pos_projections.detach().requires_grad_(True)
-        neg_projections = neg_projections.detach().requires_grad_(True)
+        B, P, _ = pos_projections.size()
+        B, N, _ = neg_projections.size()
+        projections = torch.cat([
+            query_projections.unsqueeze(1), # (batch_size, 1, embed_dim)
+            pos_projections, # (batch_size, num_pos, embed_dim)
+            neg_projections, # (batch_size, num_neg, embed_dim)
+        ], dim=1) # (batch_size, 1 + num_pos + num_neg, embed_dim)
+        projections = projections.detach().requires_grad_(True)
+
+        query_projections = projections[:, 0] # (batch_size, embed_dim)
+        pos_projections = projections[:, 1:1+P] # (batch_size, num_pos, embed_dim)
+        neg_projections = projections[:, 1+P:] # (batch_size, num_neg, embed_dim)
 
         with nullcontext():
             with self.fabric.autocast():
@@ -176,20 +197,16 @@ class GradCacheTrainer:
                     query_labels=query_labels,
                 )
         self.fabric.backward(con_loss)
-        query_cache = query_projections.grad
-        pos_cache = pos_projections.grad
-        neg_cache = neg_projections.grad
+        cache = projections.grad # (batch_size, 1 + num_pos + num_neg, embed_dim)
 
-        return query_cache, pos_cache, neg_cache, con_loss.detach()
+        return cache, con_loss.detach()
     
     def forward_backward(
             self,
             model: Lusifer,
             model_inputs: Dict[str, torch.Tensor],
             stage: RandContext, 
-            query_cache: torch.Tensor, # (batch_size, embed_dim)
-            pos_cache: torch.Tensor, # (batch_size, num_pos, embed_dim)
-            neg_cache: torch.Tensor, # (batch_size, num_neg, embed_dim)
+            cache: torch.Tensor, # (batch_size, 1 + num_pos + num_neg, embed_dim)
             ):
         """
         Forward and backward pass through the model.
@@ -216,30 +233,36 @@ class GradCacheTrainer:
             B, P, _ = pos_input_ids.size()
             B, N, _ = neg_input_ids.size()
 
+            model_input_ids = torch.cat([
+                query_input_ids.unsqueeze(1), # (batch_size, 1, seq_len)
+                pos_input_ids, # (batch_size, num_pos, seq_len)
+                neg_input_ids, # (batch_size, num_neg, seq_len)
+            ], dim=1) # (batch_size, 1 + num_pos + num_neg, seq_len)
+            model_input_ids = einops.rearrange(model_input_ids, 'b n l -> (b n) l', b=B, n=1+P+N)
+
+            model_attention_mask = torch.cat([
+                query_attention_mask.unsqueeze(1), # (batch_size, 1, seq_len)
+                pos_attention_mask, # (batch_size, num_pos, seq_len)
+                neg_attention_mask, # (batch_size, num_neg, seq_len)
+            ], dim=1)
+            model_attention_mask = einops.rearrange(model_attention_mask, 'b n l -> (b n) l', b=B, n=1+P+N)
+
+            model_prompt_length = torch.cat([
+                query_prompt_length.unsqueeze(1), # (batch_size, 1)
+                pos_prompt_length, # (batch_size, num_pos)
+                neg_prompt_length, # (batch_size, num_neg)
+            ], dim=1)
+            model_prompt_length = einops.rearrange(model_prompt_length, 'b n -> (b n)', b=B, n=1+P+N)
+
             # Forward pass
-            query_projections = model(
-                input_ids=query_input_ids,
-                attention_mask=query_attention_mask,
-                prompt_length=query_prompt_length,
-            )['projection']
+            projections = model(
+                input_ids=model_input_ids,
+                attention_mask=model_attention_mask,
+                prompt_length=model_prompt_length,
+            )['projection'] # (batch_size * (1 + num_pos + num_neg), embed_dim)
+            cache = einops.rearrange(cache, 'b n d -> (b n) d', b=B, n=1+P+N) # (batch_size * (1 + num_pos + num_neg), embed_dim)
 
-            pos_projections = model(
-                input_ids=einops.rearrange(pos_input_ids, 'b n l -> (b n) l'),
-                attention_mask=einops.rearrange(pos_attention_mask, 'b n l -> (b n) l'),
-                prompt_length=einops.rearrange(pos_prompt_length, 'b n -> (b n)'),
-            )['projection'] # (batch_size * num_pos, embed_dim)
-            pos_cache = einops.rearrange(pos_cache, 'b n d -> (b n) d', b=B, n=P)
-
-            neg_projections = model(
-                input_ids=einops.rearrange(neg_input_ids, 'b n l -> (b n) l'),
-                attention_mask=einops.rearrange(neg_attention_mask, 'b n l -> (b n) l'),
-                prompt_length=einops.rearrange(neg_prompt_length, 'b n -> (b n)'),
-            )['projection'] # (batch_size * num_neg, embed_dim)
-            neg_cache = einops.rearrange(neg_cache, 'b n d -> (b n) d', b=B, n=N)
-
-            surrougate = torch.dot(query_projections.flatten(), query_cache.flatten()) \
-                + torch.dot(pos_projections.flatten(), pos_cache.flatten()) \
-                + torch.dot(neg_projections.flatten(), neg_cache.flatten())
+            surrougate = torch.dot(projections.flatten(), cache.flatten())
             
             # Backward pass
             self.fabric.backward(surrougate)
@@ -275,27 +298,23 @@ class GradCacheTrainer:
 
         # Build cache for representations from all chunks
         labels = batch['query_labels']
-        query_cache, pos_cache, neg_cache, con_loss = self.build_cache(
+        cache, con_loss = self.build_cache(
             query_projections=all_query_projections,
             pos_projections=all_pos_projections,
             neg_projections=all_neg_projections,
             query_labels=labels,
         )
-        query_cache = query_cache.split(self.chunk_size, dim=0)
-        pos_cache = pos_cache.split(self.chunk_size, dim=0)
-        neg_cache = neg_cache.split(self.chunk_size, dim=0)
+        cache = cache.split(self.chunk_size, dim=0)
 
         # Forward and backward pass for each chunk
         accumulated_flags = [True for _ in range(len(splitted_inputs)-1)] + [False]
-        for chunk, qc, pc, nc, stage, flag in zip(splitted_inputs, query_cache, pos_cache, neg_cache, rnd_stage, accumulated_flags):
+        for chunk, c, stage, flag in zip(splitted_inputs, cache, rnd_stage, accumulated_flags):
             with self.fabric.no_backward_sync(model, enabled=flag):
                 self.forward_backward(
                     model=model,
                     model_inputs=chunk,
                     stage=stage,
-                    query_cache=qc,
-                    pos_cache=pc,
-                    neg_cache=nc,
+                    cache=c,
                 )
         return con_loss
     
