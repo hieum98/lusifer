@@ -38,7 +38,7 @@ use_miner: True
 is_distance: True
 use_cross_batch_loss: True
 # Optimization args
-global_batch_size: 512
+global_batch_size: 64
 eval_batch_size: 32
 max_epochs: 3
 max_steps: 10000

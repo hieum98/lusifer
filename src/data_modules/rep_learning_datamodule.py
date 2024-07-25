@@ -136,7 +136,7 @@ class RepLearningDataModule(L.LightningDataModule):
             'fr': FR,
             'hi': HI,
             'id': ID,
-            'ja': JA,
+            # 'ja': JA,
             'ko': KO,
             'ru': RU,
             'sw': SW,
@@ -144,7 +144,7 @@ class RepLearningDataModule(L.LightningDataModule):
             'th': TH,
             'vi': VI,
             'yo': YO,
-            'zh': ZH,
+            # 'zh': ZH,
         }
 
         self.data_names = []

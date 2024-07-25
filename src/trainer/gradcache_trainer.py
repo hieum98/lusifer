@@ -40,19 +40,16 @@ class GradCacheTrainer:
             temperature: float = 0.05,
             is_distance: bool = True,
             use_miner: bool = False,
-            cross_batch_loss: bool = True,
             chunk_size: Optional[int] = 1,
             ) -> None:
         self.fabric = fabric
         self.chunk_size = chunk_size
-        self.cross_batch_loss = cross_batch_loss
 
         self.loss_fn = ContrastiveLoss(
             loss_type=loss_type,
             temperature=temperature,
             is_distance=is_distance,
             use_miner=use_miner,
-            cross_batch_loss=cross_batch_loss,
         )
 
     def get_input_tensors(self, model_input) -> List[torch.Tensor]:
@@ -142,6 +139,7 @@ class GradCacheTrainer:
             pos_projections: torch.Tensor, # (batch_size, num_pos, embed_dim)
             neg_projections: torch.Tensor, # (batch_size, num_neg, embed_dim)
             query_labels: torch.Tensor, # (batch_size,)
+            cross_batch_loss: bool = True,
             ) -> torch.Tensor:
         """
         Compute contrastive loss from representations.
@@ -156,6 +154,7 @@ class GradCacheTrainer:
             q_labels=query_labels,
             pos_embeds=pos_projections,
             neg_embeds=neg_projections,
+            cross_batch_loss=cross_batch_loss,
         )
         return con_loss
     
@@ -166,6 +165,7 @@ class GradCacheTrainer:
             pos_projections: torch.Tensor, # (batch_size, num_pos, embed_dim)
             neg_projections: torch.Tensor, # (batch_size, num_neg, embed_dim)
             query_labels: torch.Tensor, # (batch_size,)
+            cross_batch_loss: bool = True,
             ):
         """
         Build cache for gradient computation.
@@ -195,11 +195,17 @@ class GradCacheTrainer:
                     pos_projections=pos_projections,
                     neg_projections=neg_projections,
                     query_labels=query_labels,
+                    cross_batch_loss=cross_batch_loss,
                 )
         self.fabric.backward(con_loss)
         cache = projections.grad # (batch_size, 1 + num_pos + num_neg, embed_dim)
+        
+        if cross_batch_loss:
+            con_loss = con_loss.detach() / self.fabric.world_size
+        else:
+            con_loss = con_loss.detach()
 
-        return cache, con_loss.detach()
+        return cache, con_loss
     
     def forward_backward(
             self,
@@ -279,6 +285,7 @@ class GradCacheTrainer:
         :return: loss value
         """
         # Split input into chunks
+        enable_cross_batch_negative_sampling = batch.pop('enable_cross_batch_negative_sampling', True)
         splitted_inputs = split_input(batch, self.chunk_size)
 
         # Forward pass for each chunk
@@ -303,6 +310,7 @@ class GradCacheTrainer:
             pos_projections=all_pos_projections,
             neg_projections=all_neg_projections,
             query_labels=labels,
+            cross_batch_loss=enable_cross_batch_negative_sampling,
         )
         cache = cache.split(self.chunk_size, dim=0)
 
@@ -348,14 +356,12 @@ class GradCacheTrainer:
                 break
 
             current_step = current_step + 1
-            if current_step == 1:
-                size_info = {k: v.size() for k, v in batch.items() if isinstance(v, torch.Tensor)}
-                self.fabric.print("First batch data: {}".format(size_info))
+            # if current_step == 1:
+            size_info = {k: v.size() for k, v in batch.items() if isinstance(v, torch.Tensor)}
+            self.fabric.print("First batch data: {}".format(size_info))
 
             iter_t0 = time.perf_counter()  
             con_loss = self.train_step(model=model, batch=batch)
-            if self.cross_batch_loss:
-                con_loss = con_loss / self.fabric.world_size
 
             if grad_norm_clip is not None:
                 self.fabric.clip_gradients(model, optimizer, max_norm=grad_norm_clip)

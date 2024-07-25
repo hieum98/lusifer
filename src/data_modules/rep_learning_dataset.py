@@ -23,6 +23,7 @@ class RepLearningDataset(Dataset):
         data_path = DATA[data_name]['data_path']
         self.data_name = data_name
         self.instruction = DATA[data_name]['instruction']
+        self.enable_cross_batch_negative_sampling = DATA[data_name].get('enable_cross_batch_negative_sampling', True)
         self.number_training_samples = number_training_samples
         self.neg_per_sample = neg_per_sample
         self.pos_per_sample = pos_per_sample
@@ -42,12 +43,15 @@ class RepLearningDataset(Dataset):
         example = self.data[idx]
         pos = self.rng.sample(example['positive'], min(len(example['positive']), self.pos_per_sample))
         neg = self.rng.sample(example['negative'], min(len(example['negative']), self.neg_per_sample))
+        assert len(pos) > 0, "At least one positive example per sample. Please check the data {}".format(self.data_name)
+        assert len(neg) > 0, "At least one negative example per sample. Please check the data {}".format(self.data_name)
         return {
             'query_label': idx,
             'query': example['query'], # str
             'positive': pos, # list of str
             'negative': neg, # list of str
             'instruction': self.instruction,
+            'enable_cross_batch_negative_sampling': self.enable_cross_batch_negative_sampling,
         }
     
 
@@ -129,11 +133,13 @@ class RepLearningCollator:
         
         query_labels = [example['query_label'] for example in batch]
         query_labels = torch.tensor(query_labels, dtype=torch.long)
+        # if all the examples in the batch have enable_cross_batch_negative_sampling==True, then the batch has enable_cross_batch_negative_sampling==True
+        enable_cross_batch_negative_sampling = all([example['enable_cross_batch_negative_sampling'] for example in batch])
 
         min_pos_per_sample = min([len(example['positive']) for example in batch])
         min_neg_per_sample = min([len(example['negative']) for example in batch])
-        assert min_pos_per_sample >= 1, "At least one positive example per sample"
-        assert min_neg_per_sample >= 1, "At least one negative example per sample"
+        assert min_pos_per_sample > 0, "At least one positive example per sample"
+        assert min_neg_per_sample > 0, "At least one negative example per sample"
         batch_query = []
         batch_pos = []
         batch_neg = []
@@ -179,6 +185,7 @@ class RepLearningCollator:
         neg_prompt_length = einops.rearrange(neg_prompt_length, '(b n) -> b n', b=batch_size, n=min_neg_per_sample)
 
         return {
+            'enable_cross_batch_negative_sampling': enable_cross_batch_negative_sampling,
             'query_labels': query_labels, # (batch_size,)
             'query_input_ids': query_input_ids,
             'query_attention_mask': query_attention_mask,

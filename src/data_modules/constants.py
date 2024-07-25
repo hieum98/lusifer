@@ -61,47 +61,58 @@ DATA = {
     },
     'Amazon-Counterfactual': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/amazon_counterfactual_hard_negatives.jsonl',
-        'instruction': 'Classify a given Amazon customer review text as either counterfactual or not-counterfactual.'
+        'instruction': 'Classify a given Amazon customer review text as either counterfactual or not-counterfactual.',
+        'enable_cross_batch_negative_sampling': False
     },
     'Amazon-Review': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/amazon_review_hard_negatives.jsonl',
-        'instruction': 'Classify the given Amazon review into one of five rating categories: Poor, Fair, Good, Very good, Excellent.'
+        'instruction': 'Classify the given Amazon review into one of five rating categories: Poor, Fair, Good, Very good, Excellent.',
+        'enable_cross_batch_negative_sampling': False
     },
     'ArxivP2P': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/arxivP2P_hard_negatives.jsonl',
-        'instruction': 'Identify the category of papers based on the titles and abstracts.'
+        'instruction': 'Identify the category of papers based on the titles and abstracts.',
+        'enable_cross_batch_negative_sampling': False
     },
     'ArxivS2S': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/arxivS2S_hard_negatives.jsonl',
-        'instruction': 'Identify the category of papers based on the titles.'
+        'instruction': 'Identify the category of papers based on the titles.',
+        'enable_cross_batch_negative_sampling': False
     },
     'Banking77': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/banking77_hard_negatives.jsonl',
-        'instruction': 'Given a online banking query, find the corresponding intents.'
+        'instruction': 'Given a online banking query, find the corresponding intents.',
+        'enable_cross_batch_negative_sampling': False
     },
     'biorxivP2P': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/biorxivP2P_hard_negatives.jsonl',
-        'instruction': 'Identify the category of papers based on the titles and abstracts.'
+        'instruction': 'Identify the category of papers based on the titles and abstracts.',
+        'enable_cross_batch_negative_sampling': False
     },
     'biorxivS2S': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/biorxivS2S_hard_negatives.jsonl',
-        'instruction': 'Identify the category of papers based on the titles.'
+        'instruction': 'Identify the category of papers based on the titles.',
+        'enable_cross_batch_negative_sampling': False
     },
     'Emotion': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/emotion_hard_negatives.jsonl',
-        'instruction': 'Classify the emotion expressed in the given Twitter message into one of the six emotions:anger, fear, joy, love, sadness, and surprise.'
+        'instruction': 'Classify the emotion expressed in the given Twitter message into one of the six emotions:anger, fear, joy, love, sadness, and surprise.',
+        'enable_cross_batch_negative_sampling': False
     },
     'imdb': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/imdb_hard_negatives.jsonl',
-        'instruction': 'Classify the sentiment expressed in the given movie review text as positive or negative.'
+        'instruction': 'Classify the sentiment expressed in the given movie review text as positive or negative.',
+        'enable_cross_batch_negative_sampling': False
     },
     'medrxivP2P': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/medrxivP2P_hard_negatives.jsonl',
-        'instruction': 'Identify the category of papers based on the titles and abstracts.'
+        'instruction': 'Identify the category of papers based on the titles and abstracts.',
+        'enable_cross_batch_negative_sampling': False
     },
     'medrxivS2S': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/medrxivS2S_hard_negatives.jsonl',
-        'instruction': 'Identify the category of papers based on the titles.'
+        'instruction': 'Identify the category of papers based on the titles.',
+        'enable_cross_batch_negative_sampling': False
     },
     'en_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/miracl_hard_negatives.jsonl',
@@ -113,7 +124,8 @@ DATA = {
     },
     'MTOP-Intent': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/mtop_intent_hard_negatives.jsonl',
-        'instruction': 'Classify the intent of the given utterance in task-oriented conversation.'
+        'instruction': 'Classify the intent of the given utterance in task-oriented conversation.',
+        'enable_cross_batch_negative_sampling': False
     },
     'PQA': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/pqa_hard_negatives.jsonl',
@@ -125,7 +137,8 @@ DATA = {
     },
     'Reddit-clustering': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/reddit_clustering_hard_negatives.jsonl',
-        'instruction': 'Identify the topic or theme of Reddit posts based on the titles and posts.'
+        'instruction': 'Identify the topic or theme of Reddit posts based on the titles and posts.',
+        'enable_cross_batch_negative_sampling': False
     },
     'snli': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/snli_hard_negatives.jsonl',
@@ -137,7 +150,8 @@ DATA = {
     },
     'StackExchange-clustering': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/stackexchange_clustering_hard_negatives.jsonl',
-        'instruction': 'Identify the topic or theme of StackExchange posts based on the given paragraphs.'
+        'instruction': 'Identify the topic or theme of StackExchange posts based on the given paragraphs.',
+        'enable_cross_batch_negative_sampling': False
     },
     'STS': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/sts_hard_negatives.jsonl',
@@ -145,11 +159,13 @@ DATA = {
     },
     'Toxic-conversation': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/toxic_conversations_hard_negatives.jsonl',
-        'instruction': 'Classify the given comments as either toxic or not toxic.'
+        'instruction': 'Classify the given comments as either toxic or not toxic.',
+        'enable_cross_batch_negative_sampling': False
     },
     'Tweet-Sentiment': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/tweet_sentiments_hard_negatives.jsonl',
-        'instruction': 'Classify the sentiment of a given tweet as either positive, negative, or neutral.'
+        'instruction': 'Classify the sentiment of a given tweet as either positive, negative, or neutral.',
+        'enable_cross_batch_negative_sampling': False
     },
 
     'ar_MIRACL': {
@@ -284,10 +300,10 @@ DATA = {
 }
 
 EN = [
-    'Arguana', 'CQADupStack', 'DBPedia', 'Fever', 
-    'FiQA', 'HotpotQA', 'MSMarco', 'NFCorpus', 
-    'NQ', 'Quora', 'SciDocs', 'SciFact', 'TREC-COVID', 
-    'Touche2020', '20NewsGroups', 'Amazon-Counterfactual',
+    # 'Arguana', 'CQADupStack', 'DBPedia', 'Fever', 
+    # 'FiQA', 'HotpotQA', 'MSMarco', 'NFCorpus', 
+    # 'NQ', 'Quora', 'SciDocs', 'SciFact', 'TREC-COVID', 
+    # 'Touche2020', '20NewsGroups', 'Amazon-Counterfactual',
     'Amazon-Review', 'ArxivP2P', 'ArxivS2S', 'Banking77',
     'biorxivP2P', 'biorxivS2S', 'Emotion', 'imdb',
     'medrxivP2P', 'medrxivS2S', 'en_MIRACL', 'en_MrTidy',
@@ -314,7 +330,7 @@ HI = ['hi_MIRACL']
 
 ID = ['id_MIRACL', 'id_MrTidy']
 
-JA = ['ja_MIRACL', 'ja_MrTidy']
+# JA = ['ja_MIRACL', 'ja_MrTidy']
 
 KO = ['ko_MIRACL', 'ko_MrTidy']
 
@@ -330,4 +346,4 @@ VI = ['vi-HealthQA']
 
 YO = ['yo_MIRACL']
 
-ZH = ['zh_MIRACL']
+# ZH = ['zh_MIRACL']
