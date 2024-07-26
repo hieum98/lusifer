@@ -1,6 +1,7 @@
 *.err
 *.out
-data
+data/*/*.jsonl
+data/*/qrels
 *__pycache__*
 draft.ipynb
 *.sh
