@@ -8,3 +8,5 @@ draft.ipynb
 *.sh
 wandb
 output
+results
+draft.py

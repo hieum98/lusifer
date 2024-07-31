@@ -1,349 +1,357 @@
 DATA = {
-    'Arguana': {
+    'Hieuman/Arguana': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/arguana_hard_negatives.jsonl',
-        'instruction': 'Given a claim, find documents that refute the claim.'
+        'instruction': "Given a claim, retrieve documents that support or refute the claim.",
     },
-    'CQADupStack': {
+    'Hieuman/CQADupStack': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/cqadupstack_hard_negatives.jsonl',
-        'instruction': 'Given a question, retrieve other questions from Stackexchange that are duplicates to the given question.'
+        'instruction': 'Retrieve semantically similar text.',
     },
-    'DBPedia': {
+    'Hieuman/DBPedia': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/dbpedia-entity_hard_negatives.jsonl',
-        'instruction': 'Given a query, retrieve relevant entity descriptions from DBPedia.'
+        'instruction': "Given a question, retrieve passages that answer the question.",
     },
-    'Fever': {
+    'Hieuman/Fever': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/fever_hard_negatives.jsonl',
-        'instruction': 'Given a claim, retrieve documents that support or refute the claim.'
+        'instruction': "Given a claim, retrieve documents that support or refute the claim.",
     },
-    'FiQA': {
+    'Hieuman/FiQA': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/fiqa_hard_negatives.jsonl',
-        'instruction': 'Given a financial question, retrieve user replies that best answer the question.'
+        'instruction': "Given a question, retrieve passages that answer the question.",
     },
-    'HotpotQA': {
+    'Hieuman/HotpotQA': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/hotpotqa_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'MSMarco': {
+    'Hieuman/MSMarco': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/msmarco_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'NFCorpus': {
+    'Hieuman/NFCorpus': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/nfcorpus_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'NQ': {
+    'Hieuman/NQ': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/nq_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'Quora': {
+    'Hieuman/Quora': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/quora_hard_negatives.jsonl',
-        'instruction': 'Given a question, retrieve questions that are semantically equivalent to the given question.'
+        'instruction': 'Retrieve semantically similar text.',
     },
-    'SciDocs': {
+    'Hieuman/SciDocs': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/scidocs_hard_negatives.jsonl',
-        'instruction': 'Given a scientific paper title, retrieve paper abstracts that are cited by the given paper.'
+        'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'SciFact': {
+    'Hieuman/SciFact': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/scifact_hard_negatives.jsonl',
-        'instruction': 'Given a scientific claim, retrieve documents that support or refute the claim.'
+        'instruction': "Given a claim, retrieve documents that support or refute the claim.",
     },
-    'TREC-COVID': {
+    'Hieuman/TREC-COVID': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/trec-covid_hard_negatives.jsonl',
-        'instruction': 'Given a query on COVID-19, retrieve documents that answer the query.'
+        'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'Touche2020': {
+    'Hieuman/Touche2020': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/webis-touche2020_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    '20NewsGroups': {
+    'Hieuman/20NewsGroups': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/20newsgroups_hard_negatives.jsonl',
-        'instruction': 'Identify the topic or theme of the given news articles.'
+        'instruction': 'Identify the category of the following passages.',
     },
-    'Amazon-Counterfactual': {
+    'Hieuman/Amazon-Counterfactual': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/amazon_counterfactual_hard_negatives.jsonl',
         'instruction': 'Classify a given Amazon customer review text as either counterfactual or not-counterfactual.',
         'enable_cross_batch_negative_sampling': False
     },
-    'Amazon-Review': {
+    'Hieuman/Amazon-Review': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/amazon_review_hard_negatives.jsonl',
         'instruction': 'Classify the given Amazon review into one of five rating categories: Poor, Fair, Good, Very good, Excellent.',
         'enable_cross_batch_negative_sampling': False
     },
-    'ArxivP2P': {
+    'Hieuman/ArxivP2P': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/arxivP2P_hard_negatives.jsonl',
-        'instruction': 'Identify the category of papers based on the titles and abstracts.',
+        'instruction': 'Identify the category of the following passages.',
         'enable_cross_batch_negative_sampling': False
     },
-    'ArxivS2S': {
+    'Hieuman/ArxivS2S': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/arxivS2S_hard_negatives.jsonl',
-        'instruction': 'Identify the category of papers based on the titles.',
+        'instruction': 'Identify the category of the following passages.',
         'enable_cross_batch_negative_sampling': False
     },
-    'Banking77': {
+    'Hieuman/Banking77': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/banking77_hard_negatives.jsonl',
         'instruction': 'Given a online banking query, find the corresponding intents.',
         'enable_cross_batch_negative_sampling': False
     },
-    'biorxivP2P': {
+    'Hieuman/biorxivP2P': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/biorxivP2P_hard_negatives.jsonl',
-        'instruction': 'Identify the category of papers based on the titles and abstracts.',
+        'instruction': 'Identify the category of the following passages.',
         'enable_cross_batch_negative_sampling': False
     },
-    'biorxivS2S': {
+    'Hieuman/biorxivS2S': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/biorxivS2S_hard_negatives.jsonl',
-        'instruction': 'Identify the category of papers based on the titles.',
+        'instruction': 'Identify the category of the following passages.',
         'enable_cross_batch_negative_sampling': False
     },
-    'Emotion': {
+    'Hieuman/Emotion': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/emotion_hard_negatives.jsonl',
         'instruction': 'Classify the emotion expressed in the given Twitter message into one of the six emotions:anger, fear, joy, love, sadness, and surprise.',
         'enable_cross_batch_negative_sampling': False
     },
-    'imdb': {
+    'Hieuman/imdb': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/imdb_hard_negatives.jsonl',
-        'instruction': 'Classify the sentiment expressed in the given movie review text as positive or negative.',
+        'instruction': 'Classify the sentiment expressed in the given text as positive or negative.',
         'enable_cross_batch_negative_sampling': False
     },
-    'medrxivP2P': {
+    'Hieuman/medrxivP2P': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/medrxivP2P_hard_negatives.jsonl',
-        'instruction': 'Identify the category of papers based on the titles and abstracts.',
+        'instruction': 'Identify the category of the following passages.',
         'enable_cross_batch_negative_sampling': False
     },
-    'medrxivS2S': {
+    'Hieuman/medrxivS2S': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/medrxivS2S_hard_negatives.jsonl',
-        'instruction': 'Identify the category of papers based on the titles.',
+        'instruction': 'Identify the category of the following passages.',
         'enable_cross_batch_negative_sampling': False
     },
-    'en_MIRACL': {
+    'Hieuman/en_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'en_MrTidy': {
+    'Hieuman/en_MrTidy': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/mr-tidy_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'MTOP-Intent': {
+    'Hieuman/MTOP-Intent': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/mtop_intent_hard_negatives.jsonl',
         'instruction': 'Classify the intent of the given utterance in task-oriented conversation.',
         'enable_cross_batch_negative_sampling': False
     },
-    'PQA': {
+    'Hieuman/PQA': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/pqa_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'PubMedQA': {
+    'Hieuman/PubMedQA': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/pubmedqa_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'Reddit-clustering': {
+    'Hieuman/Reddit-clustering': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/reddit_clustering_hard_negatives.jsonl',
-        'instruction': 'Identify the topic or theme of Reddit posts based on the titles and posts.',
+        'instruction': 'Identify the category of the following passages.',
         'enable_cross_batch_negative_sampling': False
     },
-    'snli': {
+    'Hieuman/snli': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/snli_hard_negatives.jsonl',
         'instruction': 'Given a premise, retrieve a hypothesis that is entailed by the premise.'
     },
-    'SQuAD': {
+    'Hieuman/SQuAD': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/squad_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'StackExchange-clustering': {
+    'Hieuman/StackExchange-clustering': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/stackexchange_clustering_hard_negatives.jsonl',
-        'instruction': 'Identify the topic or theme of StackExchange posts based on the given paragraphs.',
+        'instruction': 'Identify the category of the following passages.',
         'enable_cross_batch_negative_sampling': False
     },
-    'STS': {
+    'Hieuman/STS': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/sts_hard_negatives.jsonl',
         'instruction': 'Retrieve semantically similar text.'
     },
-    'Toxic-conversation': {
+    'Hieuman/Toxic-conversation': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/toxic_conversations_hard_negatives.jsonl',
         'instruction': 'Classify the given comments as either toxic or not toxic.',
         'enable_cross_batch_negative_sampling': False
     },
-    'Tweet-Sentiment': {
+    'Hieuman/Tweet-Sentiment': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/tweet_sentiments_hard_negatives.jsonl',
         'instruction': 'Classify the sentiment of a given tweet as either positive, negative, or neutral.',
         'enable_cross_batch_negative_sampling': False
     },
 
-    'ar_MIRACL': {
+    'Hieuman/ar_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/ar/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'ar_MrTidy': {
+    'Hieuman/ar_MrTidy': {
         'data_path': '/home/hieum/uonlp/lusifer/data/ar/mr-tidy_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'bn_MIRACL': {
+    'Hieuman/bn_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/bn/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'bn_MrTidy': {
+    'Hieuman/bn_MrTidy': {
         'data_path': '/home/hieum/uonlp/lusifer/data/bn/mr-tidy_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'de_MIRACL': {
+    'Hieuman/de_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/de/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'es_MIRACL': {
+    'Hieuman/es_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/es/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'fa_MIRACL': {
+    'Hieuman/fa_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/fa/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'fi_MIRACL': {
+    'Hieuman/fi_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/fi/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'fi_MrTidy': {
+    'Hieuman/fi_MrTidy': {
         'data_path': '/home/hieum/uonlp/lusifer/data/fi/mr-tidy_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'fr_MIRACL': {
+    'Hieuman/fr_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/fr/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'hi_MIRACL': {
+    'Hieuman/hi_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/hi/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'id_MIRACL': {
+    'Hieuman/id_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/id/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'id_MrTidy': {
+    'Hieuman/id_MrTidy': {
         'data_path': '/home/hieum/uonlp/lusifer/data/id/mr-tidy_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'ja_MIRACL': {
+    'Hieuman/ja_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/ja/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'ja_MrTidy': {
+    'Hieuman/ja_MrTidy': {
         'data_path': '/home/hieum/uonlp/lusifer/data/ja/mr-tidy_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'ko_MIRACL': {
+    'Hieuman/ko_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/ko/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'ko_MrTidy': {
+    'Hieuman/ko_MrTidy': {
         'data_path': '/home/hieum/uonlp/lusifer/data/ko/mr-tidy_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'ru_MIRACL': {
+    'Hieuman/ru_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/ru/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'ru_MrTidy': {
+    'Hieuman/ru_MrTidy': {
         'data_path': '/home/hieum/uonlp/lusifer/data/ru/mr-tidy_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'sw_MIRACL': {
+    'Hieuman/sw_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/sw/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'sw_MrTidy': {
+    'Hieuman/sw_MrTidy': {
         'data_path': '/home/hieum/uonlp/lusifer/data/sw/mr-tidy_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'te_MIRACL': {
+    'Hieuman/te_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/te/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'te_MrTidy': {
+    'Hieuman/te_MrTidy': {
         'data_path': '/home/hieum/uonlp/lusifer/data/te/mr-tidy_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'th_MIRACL': {
+    'Hieuman/th_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/th/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'th_MrTidy': {
+    'Hieuman/th_MrTidy': {
         'data_path': '/home/hieum/uonlp/lusifer/data/th/mr-tidy_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'vi-HealthQA': {
+    'Hieuman/vi-HealthQA': {
         'data_path': '/home/hieum/uonlp/lusifer/data/vi/vihealthqa_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'yo_MIRACL': {
+    'Hieuman/yo_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/yo/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
 
-    'zh_MIRACL': {
+    'Hieuman/zh_MIRACL': {
         'data_path': '/home/hieum/uonlp/lusifer/data/zh/miracl_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
+    'Hieuman/dureader': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/zh/dureader_hard_negatives.jsonl',
+        'instruction': 'Given a question, retrieve passages that answer the question.'
+    },
+    'Hieuman/t2ranking': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/zh/t2ranking_hard_negatives.jsonl',
+        'instruction': 'Given a question, retrieve passages that answer the question.'
+    }
 }
 
 EN = [
-    # 'Arguana', 'CQADupStack', 'DBPedia', 'Fever', 
-    # 'FiQA', 'HotpotQA', 'MSMarco', 'NFCorpus', 
-    # 'NQ', 'Quora', 'SciDocs', 'SciFact', 'TREC-COVID', 
-    # 'Touche2020', '20NewsGroups', 'Amazon-Counterfactual',
-    'Amazon-Review', 'ArxivP2P', 'ArxivS2S', 'Banking77',
-    'biorxivP2P', 'biorxivS2S', 'Emotion', 'imdb',
-    'medrxivP2P', 'medrxivS2S', 'en_MIRACL', 'en_MrTidy',
-    'MTOP-Intent', 'PQA', 'PubMedQA', 'Reddit-clustering',
-    'snli', 'SQuAD', 'StackExchange-clustering', 'STS',
-    'Toxic-conversation', 'Tweet-Sentiment'
+    'Hieuman/Arguana', 'Hieuman/CQADupStack', 'Hieuman/DBPedia', 'Hieuman/Fever', 
+    'Hieuman/FiQA', 'Hieuman/HotpotQA', 'Hieuman/MSMarco', 'Hieuman/NFCorpus', 
+    'Hieuman/NQ', 'Hieuman/Quora', 'Hieuman/SciDocs', 'Hieuman/SciFact', 'Hieuman/TREC-COVID', 
+    'Hieuman/Touche2020', 'Hieuman/20NewsGroups', 'Hieuman/Amazon-Counterfactual',
+    'Hieuman/Amazon-Review', 'Hieuman/ArxivP2P', 'Hieuman/ArxivS2S', 'Hieuman/Banking77',
+    'Hieuman/biorxivP2P', 'Hieuman/biorxivS2S', 'Hieuman/Emotion', 'Hieuman/imdb',
+    'Hieuman/medrxivP2P', 'Hieuman/medrxivS2S', 'Hieuman/en_MIRACL', 'Hieuman/en_MrTidy',
+    'Hieuman/MTOP-Intent', 'Hieuman/PQA', 'Hieuman/PubMedQA', 'Hieuman/Reddit-clustering',
+    'Hieuman/snli', 'Hieuman/SQuAD', 'Hieuman/StackExchange-clustering', 'Hieuman/STS',
+    'Hieuman/Toxic-conversation', 'Hieuman/Tweet-Sentiment'
     ]
 
-AR = ['ar_MIRACL', 'ar_MrTidy']
+AR = ['Hieuman/ar_MIRACL', 'Hieuman/ar_MrTidy']
 
-BN = ['bn_MIRACL', 'bn_MrTidy']
+BN = ['Hieuman/bn_MIRACL', 'Hieuman/bn_MrTidy']
 
-DE = ['de_MIRACL']
+DE = ['Hieuman/de_MIRACL']
 
-ES = ['es_MIRACL']
+ES = ['Hieuman/es_MIRACL']
 
-FA = ['fa_MIRACL']
+FA = ['Hieuman/fa_MIRACL']
 
-FI = ['fi_MIRACL', 'fi_MrTidy']
+FI = ['Hieuman/fi_MIRACL', 'Hieuman/fi_MrTidy']
 
-FR = ['fr_MIRACL']
+FR = ['Hieuman/fr_MIRACL']
 
-HI = ['hi_MIRACL']
+HI = ['Hieuman/hi_MIRACL']
 
-ID = ['id_MIRACL', 'id_MrTidy']
+ID = ['Hieuman/id_MIRACL', 'Hieuman/id_MrTidy']
 
-# JA = ['ja_MIRACL', 'ja_MrTidy']
+JA = ['Hieuman/ja_MIRACL', 'Hieuman/ja_MrTidy']
 
-KO = ['ko_MIRACL', 'ko_MrTidy']
+KO = ['Hieuman/ko_MIRACL', 'Hieuman/ko_MrTidy']
 
-RU = ['ru_MIRACL', 'ru_MrTidy']
+RU = ['Hieuman/ru_MIRACL', 'Hieuman/ru_MrTidy']
 
-SW = ['sw_MIRACL', 'sw_MrTidy']
+SW = ['Hieuman/sw_MIRACL', 'Hieuman/sw_MrTidy']
 
-TE = ['te_MIRACL', 'te_MrTidy']
+TE = ['Hieuman/te_MIRACL', 'Hieuman/te_MrTidy']
 
-TH = ['th_MIRACL', 'th_MrTidy']
+TH = ['Hieuman/th_MIRACL', 'Hieuman/th_MrTidy']
 
-VI = ['vi-HealthQA']
+VI = ['Hieuman/vi-HealthQA']
 
-YO = ['yo_MIRACL']
+YO = ['Hieuman/yo_MIRACL']
 
-# ZH = ['zh_MIRACL']
+ZH = ['Hieuman/zh_MIRACL', 'Hieuman/dureader', 'Hieuman/t2ranking']

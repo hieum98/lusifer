@@ -96,6 +96,7 @@ if __name__ == '__main__':
     if os.path.exists(output_path):
         print(f'{name} has been processed!')
     else:
+        print(f'Parsing {name}...')
         parse_beir_format(
             data_dir=data_dir,
             name=name,
@@ -105,6 +106,7 @@ if __name__ == '__main__':
     if os.path.exists(output_path.replace('.jsonl', '_hard_negatives.jsonl')):
         print(f'{name} hard negatives has been mined!')
     else:
+        print(f'Mining hard negatives for {name}...')
         mine_hard_negatives(
             data_dir=data_dir,
             name=name,

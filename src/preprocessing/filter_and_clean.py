@@ -16,7 +16,7 @@ if __name__=="__main__":
             'fr': FR,
             'hi': HI,
             'id': ID,
-            'ja': JA,
+            # 'ja': JA,
             'ko': KO,
             'ru': RU,
             'sw': SW,
@@ -24,7 +24,7 @@ if __name__=="__main__":
             'th': TH,
             'vi': VI,
             'yo': YO,
-            'zh': ZH,
+            # 'zh': ZH,
         }
     
     max_num_worker_suggest = 1
@@ -41,6 +41,7 @@ if __name__=="__main__":
     for n in data_names:
         # print("Processing data_name:", n)
         data_path = DATA[n]['data_path']
+        print("Processing data_name:", n, "from path:", data_path)
         # try:
         #     data = datasets.load_dataset('json', data_files=data_path, split='train')
         #     if len(data) < 100:
@@ -50,6 +51,7 @@ if __name__=="__main__":
         #     print("Error loading data_name:", n)
         #     continue
         # filter out data with no positive examples
+        data = datasets.load_dataset('json', data_files=data_path, split='train')
         print("Original number of examples:", len(data))
         data = data.filter(lambda x: len(x['positive']) > 0, num_proc=num_workers)
         print("Number of examples after removing those with no positive examples:", len(data))

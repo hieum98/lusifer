@@ -2,7 +2,7 @@
 langs:
   - all
 max_seq_length: 512
-number_training_samples: 100_000
+number_training_samples: 200_000
 neg_per_sample: 32
 pos_per_sample: 3
 num_workers: 8
@@ -24,6 +24,7 @@ attn_implementation: 'flash_attention_2'
 
 # Training args
 seed: 777
+model_revision: 't5-mistral.v0.1'
 # Training strategy args
 precision: 'bf16-true'
 strategy: 'fsdp'

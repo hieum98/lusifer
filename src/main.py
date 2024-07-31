@@ -147,7 +147,6 @@ def main(
         temperature=training_args.temperature,
         is_distance=training_args.is_distance,
         use_miner=training_args.use_miner,
-        cross_batch_loss=training_args.use_cross_batch_loss,
         chunk_size=training_args.gc_chunk_size,
     )
 
@@ -174,6 +173,7 @@ def main(
             checkpoint_iterval=training_args.checkpoint_interval,
             checkpoint_dir=training_args.checkpoint_dir,
             checkpoint_filter=filter_fn,
+            model_revision=training_args.model_revision,
             eval_batch_size=training_args.eval_batch_size,
         )
         fabric.barrier()
@@ -278,6 +278,9 @@ if __name__ == "__main__":
         "--config_file", type=str, required=True, help="Path to the yaml config file",
     )
     parser.add_argument(
+        "--model_revision", type=str, default=None, help="Model revision"
+    )
+    parser.add_argument(
         "--nodes", type=int, default=1, help="Number of nodes"
     )
     parser.add_argument(
@@ -306,6 +309,8 @@ if __name__ == "__main__":
     print(f"Loading yaml config {config_file}")
     data_args, model_args, training_args = hf_parser.parse_yaml_file(yaml_file=config_file)
     # Add read-only arguments
+    if args.model_revision is not None:
+        training_args.model_revision = args.model_revision
     training_args.nodes = args.nodes
     training_args.devices = args.devices
     training_args.gc_chunk_size = args.gc_chunk_size

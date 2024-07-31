@@ -1,7 +1,8 @@
 import os
 
 from src.preprocessing.process_beir import mine_hard_negatives, parse_beir_format
-from src.preprocessing.tool import load_miracl_datasets, load_mr_tidy_datasets
+from src.preprocessing.tool import load_miracl_datasets, load_mr_tidy_datasets, load_dureader_dataset, load_t2ranking_dataset
+from src.preprocessing.tool import mine_hard_negatives as _mine_hard_negatives
 
 
 ALL_CORPUS = {
@@ -11,7 +12,9 @@ ALL_CORPUS = {
         {'telugu': 'te'}, {'thai': 'th'}, {'japanese': 'ja'},
         ],
     'miracl': ['ar', 'bn', 'en', 'es', 'fa', 'fi', 'fr', 'hi', 'id', 'ja', 'ko', 'ru', 'sw', 'te', 'th', 'zh', 'de', 'yo'],
-    'vihealthqa': ['vi']
+    'vihealthqa': ['vi'],
+    'dureader': ['zh'],
+    't2ranking': ['zh']
 }
 
 
@@ -63,11 +66,46 @@ if __name__=='__main__':
         if os.path.exists(output_path.replace('.jsonl', '_hard_negatives.jsonl')):
             print('vihealthqa hard negatives has been mined!')
         else:
+            print('Mining hard negatives for vihealthqa...')
             mine_hard_negatives(
                 data_dir=data_dir,
                 name='vihealthqa',
                 data_path=output_path
             )
+    elif corpus_name == 'dureader':
+        output_path = os.path.join(data_dir, 'zh', f'{corpus_name}.jsonl')
+        print(f'Processing {corpus_name}...')
+        if os.path.exists(output_path):
+            print(f'{corpus_name} has been processed!')
+        else:
+            data = load_dureader_dataset()
+            data.to_json(output_path, lines=True, orient='records')
+        
+        if os.path.exists(output_path.replace('.jsonl', '_hard_negatives.jsonl')):
+            print('dureader hard negatives has been mined!')
+        else:
+            print('Mining hard negatives for dureader...')
+            _mine_hard_negatives(
+                data_path=output_path
+            )
+    elif corpus_name == 't2ranking':
+        output_path = os.path.join(data_dir, 'zh', f'{corpus_name}.jsonl')
+        print(f'Processing {corpus_name}...')
+        if os.path.exists(output_path):
+            print(f'{corpus_name} has been processed!')
+        else:
+            data = load_t2ranking_dataset()
+            data.to_json(output_path, lines=True, orient='records')
+        
+        if os.path.exists(output_path.replace('.jsonl', '_hard_negatives.jsonl')):
+            print('t2ranking hard negatives has been mined!')
+        else:
+            print('Mining hard negatives for t2ranking...')
+            _mine_hard_negatives(
+                data_path=output_path
+            )
+
+        
         
             
     

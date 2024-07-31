@@ -84,6 +84,11 @@ class TrainingArguments:
         default=777,
         metadata={"help": "Seed for reproducibility"}
     )
+
+    model_revision: str = field(
+        default='dev.v0',
+        metadata={"help": "Model revision"}
+    )
     
     nodes: int = field(
         default=1,

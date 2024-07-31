@@ -4,6 +4,7 @@ import torch
 from torch.utils.data import DataLoader, Sampler
 import lightning as L
 from datasets import load_dataset
+from tqdm import tqdm
 from transformers import PreTrainedTokenizer
 
 from src.data_modules.constants import *
@@ -144,7 +145,7 @@ class RepLearningDataModule(L.LightningDataModule):
             'th': TH,
             'vi': VI,
             'yo': YO,
-            # 'zh': ZH,
+            'zh': ZH,
         }
 
         self.data_names = []
@@ -154,6 +155,7 @@ class RepLearningDataModule(L.LightningDataModule):
         else:
             for l in langs:
                 self.data_names.extend(lang_to_data[l])
+        self.data_names.sort()
         self.num_workers = num_workers
         self.seed = seed
     
@@ -255,9 +257,7 @@ if __name__=='__main__':
     )
     dm.setup()
     dl = dm.train_dataloader()
-    for batch in dl: 
-        breakpoint()
-        print(batch)
-        break
+    for batch in tqdm(dl): 
+        pass
 
 

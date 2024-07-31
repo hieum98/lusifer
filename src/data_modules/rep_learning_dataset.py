@@ -28,8 +28,10 @@ class RepLearningDataset(Dataset):
         self.neg_per_sample = neg_per_sample
         self.pos_per_sample = pos_per_sample
         self.seed = seed
-
-        data = datasets.load_dataset('json', data_files=data_path, split='train')
+        try:
+            data = datasets.load_dataset(data_name, split='train')
+        except:
+            data = datasets.load_dataset('json', data_files=data_path, split='train')
         if len(data) > number_training_samples:
             data = data.train_test_split(train_size=number_training_samples, seed=seed, shuffle=True)['train']
         self.data = data
@@ -94,25 +96,24 @@ class RepLearningCollator:
         user_bos = special_tokens.get("user_bos", "")
         eos = special_tokens.get("eos", "")
         eot = special_tokens.get("eot", "")
-        self.query_prompt = bos + user_bos + "Query: {instruction}" + "\n"
-        self.query_format = bos + user_bos + "Query: {instruction}" + "\n" + "{example}" + eot + eos
-        self.candidate_prompt = bos + user_bos + "Candidate:" + "\n"
-        self.candidate_format = bos + user_bos + "Candidate:" + "\n" + "{example}" + eot + eos
+        self.query_prompt = bos + user_bos + "{instruction}." 
+        self.query_format = bos + user_bos + "{instruction}." + "\n{example}" + eot + eos
+        self.candidate_prompt = bos + user_bos + "{instruction}. Candidate:" + "\n"
+        self.candidate_format = bos + user_bos + "{instruction}. Candidate:" + "\n" + "{example}" + eot + eos
         
 
     def tokenize_example(
             self,
             example: str,
             is_query: bool,
-            instruction: str = None,
+            instruction: str="",
             ) -> BatchEncoding:
-        if instruction is None:
-            instruction = ""
-        prompt = self.query_prompt.format(instruction=instruction) if is_query else self.candidate_prompt 
         if is_query:
+            prompt = self.query_prompt.format(instruction=instruction)
             example = self.query_format.format(instruction=instruction, example=example)
         else:
-            example = self.candidate_format.format(example=example)
+            prompt = self.candidate_prompt.format(instruction=instruction)
+            example = self.candidate_format.format(instruction=instruction, example=example)
         model_inputs = self.tokenizer(
             example,
             padding="longest",
@@ -123,8 +124,13 @@ class RepLearningCollator:
         )
         # find the prompt length
         prompt_length = len(self.tokenizer(prompt, add_special_tokens=False)["input_ids"])
-        assert len(model_inputs['input_ids']) > prompt_length, f"Input length is less than prompt length: {len(model_inputs['input_ids'])} <= {prompt_length}"
-        model_inputs['prompt_length'] = prompt_length
+        try:
+            assert len(model_inputs['input_ids']) > prompt_length, f"Input length is less than prompt length: {len(model_inputs['input_ids'])} <= {prompt_length}."
+            model_inputs['prompt_length'] = prompt_length
+        except:
+            print('model_inputs:', model_inputs)
+            print('example:', example)
+            print('prompt:', prompt)
 
         return model_inputs
     

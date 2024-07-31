@@ -2,15 +2,15 @@ from typing import List, Optional, Tuple, Union
 import einops
 import torch
 import torch.nn as nn
-from transformers.models.mistral.modeling_mistral import (
-    MistralConfig,
-    MistralPreTrainedModel,
-    MistralDecoderLayer,
-    MistralRMSNorm,
-    MISTRAL_START_DOCSTRING,
-    MISTRAL_INPUTS_DOCSTRING
+from transformers.models.llama.modeling_llama import (
+    LlamaConfig,
+    LlamaPreTrainedModel,
+    LlamaDecoderLayer,
+    LlamaRMSNorm,
+    LLAMA_START_DOCSTRING,
+    LLAMA_INPUTS_DOCSTRING
 )
-from transformers.modeling_attn_mask_utils import _prepare_4d_attention_mask, _prepare_4d_attention_mask_for_sdpa
+from transformers.modeling_attn_mask_utils import AttentionMaskConverter, _prepare_4d_attention_mask, _prepare_4d_attention_mask_for_sdpa
 from transformers.modeling_outputs import BaseModelOutputWithPast
 from transformers.cache_utils import Cache, DynamicCache, SlidingWindowCache, StaticCache
 from transformers.utils import (
@@ -22,43 +22,69 @@ from transformers.utils import (
 logger = logging.get_logger(__name__)
 
 
-class BidirectionalMistral(MistralPreTrainedModel):
+class BidirectionalLlama(LlamaPreTrainedModel):
     """
-    Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`MistralDecoderLayer`]
+    Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`LlamaDecoderLayer`]
 
     Args:
-        config: MistralConfig
+        config: LlamaConfig
     """
 
-    @add_start_docstrings(
-    "The bare Mistral Model with bidirectional attention modified that outputs raw hidden-states without any specific head on top.",
-    MISTRAL_START_DOCSTRING,
-    )
-    def __init__(self, config: MistralConfig):
+    def __init__(self, config: LlamaConfig):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
 
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
         self.layers = nn.ModuleList(
-            [MistralDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+            [LlamaDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
         )
         for layer in self.layers:
             layer.self_attn.is_causal = False
-        self._attn_implementation = config._attn_implementation
-        self.norm = MistralRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-
+        self.norm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.gradient_checkpointing = False
+
         # Initialize weights and apply final processing
         self.post_init()
-    
+
     def get_input_embeddings(self):
         return self.embed_tokens
 
     def set_input_embeddings(self, value):
         self.embed_tokens = value
 
-    @add_start_docstrings_to_model_forward(MISTRAL_INPUTS_DOCSTRING)
+    def _update_attn_mask(
+            self,
+        attention_mask: torch.Tensor,
+        input_tensor: torch.Tensor,
+        cache_position: torch.Tensor,
+        past_key_values: Cache,
+        output_attentions: bool,
+    ):
+        # TODO: As of torch==2.2.0, the `attention_mask` passed to the model in `generate` is 2D and of dynamic length even when the static
+        # KV cache is used. This is an issue for torch.compile which then recaptures cudagraphs at each decode steps due to the dynamic shapes.
+        # (`recording cudagraph tree for symint key 13`, etc.), which is VERY slow. A workaround is `@torch.compiler.disable`, but this prevents using
+        # `fullgraph=True`. See more context in https://github.com/huggingface/transformers/pull/29114
+
+        if self.config._attn_implementation == "flash_attention_2":
+            if attention_mask is not None and 0.0 in attention_mask:
+                return attention_mask
+            return None
+        
+        if self.config._attn_implementation == "sdpa" and not output_attentions:
+            # output_attentions=True can not be supported when using SDPA, and we fall back on
+            # the manual implementation that requires a 4D causal mask in all cases.
+            attention_mask = _prepare_4d_attention_mask_for_sdpa(
+                attention_mask, input_tensor.dtype, 
+            )
+        else:
+            # 4d mask is passed through the layers
+            attention_mask = _prepare_4d_attention_mask(
+                attention_mask, input_tensor.dtype,
+            )
+        return attention_mask
+
+    @add_start_docstrings_to_model_forward(LLAMA_INPUTS_DOCSTRING)
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -77,10 +103,8 @@ class BidirectionalMistral(MistralPreTrainedModel):
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
         use_cache = use_cache if use_cache is not None else self.config.use_cache
-
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        # retrieve input_ids and inputs_embeds
         if (input_ids is None) ^ (inputs_embeds is not None):
             raise ValueError(
                 "You cannot specify both input_ids and inputs_embeds at the same time, and must specify either one"
@@ -88,7 +112,7 @@ class BidirectionalMistral(MistralPreTrainedModel):
 
         if self.gradient_checkpointing and self.training and use_cache:
             logger.warning_once(
-                "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`..."
+                "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`."
             )
             use_cache = False
 
@@ -96,9 +120,9 @@ class BidirectionalMistral(MistralPreTrainedModel):
             inputs_embeds = self.embed_tokens(input_ids)
 
         return_legacy_cache = False
-        if use_cache and not isinstance(past_key_values, Cache):
-            past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+        if use_cache and not isinstance(past_key_values, Cache):  # kept for BC (non `Cache` `past_key_values` inputs)
             return_legacy_cache = True
+            past_key_values = DynamicCache.from_legacy_cache(past_key_values)
             logger.warning_once(
                 "We detected that you are passing `past_key_values` as a tuple and this is deprecated and will be removed in v4.43. "
                 "Please use an appropriate `Cache` class (https://huggingface.co/docs/transformers/v4.41.3/en/internal/generation_utils#transformers.Cache)"
@@ -109,24 +133,12 @@ class BidirectionalMistral(MistralPreTrainedModel):
             cache_position = torch.arange(
                 past_seen_tokens, past_seen_tokens + inputs_embeds.shape[1], device=inputs_embeds.device
             )
-
         if position_ids is None:
             position_ids = cache_position.unsqueeze(0)
 
-        if self._attn_implementation == 'flash_attention_2':
-            # 2d mask is passed through the layers
-            attention_mask = attention_mask if (attention_mask is not None and 0.0 in attention_mask) else None
-        elif self._attn_implementation == "sdpa" and not output_attentions:
-            # output_attentions=True can not be supported when using SDPA, and we fall back on
-            # the manual implementation that requires a 4D causal mask in all cases.
-            attention_mask = _prepare_4d_attention_mask_for_sdpa(
-                attention_mask, inputs_embeds.dtype, 
-            )
-        else:
-            # 4d mask is passed through the layers
-            attention_mask = _prepare_4d_attention_mask(
-                attention_mask, inputs_embeds.dtype,
-            )
+        attention_mask = self._update_attn_mask(
+            attention_mask, inputs_embeds, cache_position, past_key_values, output_attentions
+        )
 
         hidden_states = inputs_embeds
 
@@ -188,6 +200,7 @@ class BidirectionalMistral(MistralPreTrainedModel):
             attentions=all_self_attns,
         )
 
-        
+
+
 
 

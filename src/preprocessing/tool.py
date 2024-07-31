@@ -1263,3 +1263,34 @@ def load_miracl_datasets(lang:str, **kwargs):
     return dataset
 
 
+def load_dureader_dataset(**kwargs):
+    num_proc = get_max_num_worker_suggest()
+    def process_example(example):
+        return {
+            'query': example['query'],
+            'positive': [example['positive']],
+            'negative': [example['negative']],
+        }
+
+    dataset = datasets.load_dataset('json', data_files='/home/hieum/uonlp/lusifer/data/dureader.jsonl', split='train')
+    dataset = dataset.map(process_example, num_proc=num_proc)
+
+    return dataset
+
+
+def load_t2ranking_dataset(**kwargs):
+    num_proc = get_max_num_worker_suggest()
+    def process_example(example):
+        return {
+            'query': example['query'],
+            'positive': [example['positive']],
+            'negative': [example['negative']],
+        }
+
+    dataset = datasets.load_dataset('json', data_files='/home/hieum/uonlp/lusifer/data/t2ranking.jsonl', split='train')
+    dataset = dataset.map(process_example, num_proc=num_proc)
+
+    return dataset
+
+
+

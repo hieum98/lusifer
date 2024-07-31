@@ -11,9 +11,10 @@ from torch.utils.data import DataLoader
 from torch.utils.checkpoint import get_device_states, set_device_states
 import lightning as L
 
-from src.models.lusifer import Lusifer
+from src.models.lusifer import Lusifer, WrappedLusifer
 from src.trainer.loss import ContrastiveLoss
 from src.trainer.utils import split_input
+from src.eval.eval import eval_multilingual, eval_mteb
 
 
 class RandContext:
@@ -337,6 +338,7 @@ class GradCacheTrainer:
             checkpoint_iterval: Optional[int] = 10000,
             checkpoint_dir: Optional[str] = './checkpoints/',
             checkpoint_filter: Optional[Callable] = None,
+            model_revision: Optional[str] = 'v0.1',
             eval_batch_size: Optional[int] = 32,
             ):
         """
@@ -356,9 +358,9 @@ class GradCacheTrainer:
                 break
 
             current_step = current_step + 1
-            # if current_step == 1:
-            size_info = {k: v.size() for k, v in batch.items() if isinstance(v, torch.Tensor)}
-            self.fabric.print("First batch data: {}".format(size_info))
+            if current_step == 1:
+                size_info = {k: v.size() for k, v in batch.items() if isinstance(v, torch.Tensor)}
+                self.fabric.print("First batch data: {}".format(size_info))
 
             iter_t0 = time.perf_counter()  
             con_loss = self.train_step(model=model, batch=batch)
@@ -406,29 +408,43 @@ class GradCacheTrainer:
                 else:
                     self.fabric.save(checkpoint_path, stage)
                 self.fabric.print(f"Checkpoint saved at {checkpoint_path}")
-                self.fabric.barrier()
-        
-                # Restore model from checkpoint
                 torch.cuda.empty_cache()
                 self.fabric.load(checkpoint_path, stage, strict=False)
                 model = stage.pop("model")
                 optimizer = stage.pop("optimizer")
                 scheduler = stage.pop("scheduler")
+                self.fabric.barrier()
+                model_hprams = model.hprams
 
                 # Evaluate model
                 if self.fabric.global_rank == 0:
                     self.fabric.print("Evaluating model")
-                    model_hprams = model.hprams
-                    eval_model = Lusifer(**model_hprams)
-                    self.fabric.print(f"Loading model from {checkpoint_path}")
-                    stage_dict = torch.load(checkpoint_path)
-                    eval_model.load_state_dict(stage_dict['model'], strict=False)
-                    eval_model.eval()
-                    eval_model = eval_model.to(0)
+                    model_revision = f"{model_revision}_step-{current_step}_epoch-{epoch_num}"
+                    eval_model = WrappedLusifer(
+                        model_revision=model_revision, 
+                        model_checkpoint=checkpoint_path,
+                        **model_hprams
+                        )
+                    mteb_results = eval_mteb(
+                        model=eval_model,
+                        output_folder=checkpoint_dir,
+                        batch_size=eval_batch_size,
+                        is_quick_run=True,
+                    )
+                    multilingual_results = eval_multilingual(
+                        model=eval_model,
+                        output_folder=checkpoint_dir,
+                        batch_size=eval_batch_size,
+                        is_quick_run=True,
+                    )
+                    results = {
+                        'Avg/mteb_quick_avg': mteb_results['avg']['all_tasks'],
+                        'Avg/multilingual_quick_avg': multilingual_results['avg']['all_tasks'],
+                    }
+                    self.fabric.log_dict(results, step=current_step)
                     # Eval logic here
                     self.fabric.print("Model evaluation finished")
                     del eval_model
                     torch.cuda.empty_cache()
-                
                 self.fabric.barrier()
         return checkpoint_path

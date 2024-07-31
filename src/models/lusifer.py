@@ -1,4 +1,6 @@
-from typing import List, Optional, Tuple, Union
+import os
+from typing import Dict, List, Optional, Tuple, Union
+from datetime import date
 import numpy as np
 import torch
 import torch.nn as nn
@@ -15,6 +17,7 @@ from transformers import (
 )
 from transformers.models.t5.modeling_t5 import T5EncoderModel
 from peft import PeftModel, LoraConfig, TaskType, get_peft_model
+import mteb
 
 from src.models.modeling_bidirectional_mistral import BidirectionalMistral
 from src.special_tokens import SPECIAL_TOKENS
@@ -36,6 +39,7 @@ class Lusifer(nn.Module):
             lora_alpha: int = 32,
             dropout: float = 0.1,
             attn_implementation: str = 'flash_attention_2',
+            model_dtype: torch.dtype = torch.bfloat16,
     ) -> None:
         super().__init__()
         self.hprams = {
@@ -50,12 +54,15 @@ class Lusifer(nn.Module):
             'loar_r': loar_r,
             'lora_alpha': lora_alpha,
             'dropout': dropout,
-            'attn_implementation': attn_implementation
+            'attn_implementation': attn_implementation,
+            'model_dtype': model_dtype,
         }
         self.is_freeze_univeral_learner = is_freeze_univeral_learner
         
         self.tokenizer = self.create_tokenizer(univeral_learner_name_or_path)
-        self.special_tokens = SPECIAL_TOKENS[univeral_learner_backbone_type]
+
+        if attn_implementation == "flash_attention_2":
+            model_dtype = torch.bfloat16
 
         self.univeral_learner = self.create_transformer(
             model_name_or_path=univeral_learner_name_or_path,
@@ -65,6 +72,7 @@ class Lusifer(nn.Module):
             lora_dropout=dropout,
             adapter_name=universal_learner_lora_name,
             attn_implementation=attn_implementation,
+            model_dtype=model_dtype,
         )
         if self.is_freeze_univeral_learner and universal_learner_lora_name != None:
             print("Warning: You are freezing the univeral learner but the model has an adapter. Set is_freeze_univeral_learner=False to train the adapter.")
@@ -83,20 +91,21 @@ class Lusifer(nn.Module):
             lora_dropout=dropout,
             adapter_name=encoder_lora_name,
             attn_implementation=attn_implementation,
+            model_dtype=model_dtype,
         )
         self.encoder_dim = self.encoder.config.hidden_size
 
         self.pooling_method = pooling_method
 
         self.projection = nn.Sequential(
-            nn.Linear(self.univeral_learner_dim, self.encoder_dim),
+            nn.Linear(self.univeral_learner_dim, self.encoder_dim, dtype=model_dtype),
             nn.ReLU(),
-            nn.Linear(self.encoder_dim, self.encoder_dim),
+            nn.Linear(self.encoder_dim, self.encoder_dim, dtype=model_dtype),
         )
         self.output_projection = nn.Sequential(
-            nn.Linear(self.encoder_dim, self.encoder_dim),
+            nn.Linear(self.encoder_dim, self.encoder_dim, dtype=model_dtype),
             nn.ReLU(),
-            nn.Linear(self.encoder_dim, self.encoder_dim),
+            nn.Linear(self.encoder_dim, self.encoder_dim, dtype=model_dtype),
         )
     
     def create_tokenizer(self, model_name_or_path: str):
@@ -122,9 +131,10 @@ class Lusifer(nn.Module):
             lora_alpha: int = 32,
             lora_dropout: float = 0.1,
             target_modules: Union[str, List[str]] = "all",
-            adapter_name: str = None,
+            adapter_name: str = 'default',
             quantization: bool = False,
             attn_implementation: str = None,
+            model_dtype: torch.dtype = torch.bfloat16,
     ):
         if use_lora:
             config = AutoConfig.from_pretrained(
@@ -157,7 +167,7 @@ class Lusifer(nn.Module):
             'pretrained_model_name_or_path': model_name_or_path,
             'config': config,
             'quantization_config': bnb_config,
-            'torch_dtype': torch.bfloat16 if attn_implementation == "flash_attention_2" else None,
+            'torch_dtype': torch.bfloat16 if attn_implementation == "flash_attention_2" else model_dtype,
             'attn_implementation': attn_implementation,
         }
         if not is_llm_bidirectional:
@@ -166,7 +176,7 @@ class Lusifer(nn.Module):
                 kwargs = {
                     'pretrained_model_name_or_path': model_name_or_path, 
                     'config': config,
-                    'torch_dtype': torch.bfloat16 if attn_implementation == "flash_attention_2" else None,
+                    'torch_dtype': torch.bfloat16 if attn_implementation == "flash_attention_2" else model_dtype,
                     }
             else:
                 model_class = AutoModel
@@ -260,6 +270,7 @@ class Lusifer(nn.Module):
             output_hidden_states=True,
             return_dict=True
         ).hidden_states[-2] # (batch_size, seq_len, hidden_size)
+        
         univeral_representation = self.projection(univeral_representation) # (batch_size, seq_len, hidden_size)
 
         # feed the univeral representation to the encoder
@@ -268,31 +279,100 @@ class Lusifer(nn.Module):
             attention_mask=attention_mask,
             return_dict=True
         ).last_hidden_state # (batch_size, seq_len, hidden_size)
+
         sentence_representation = self.pooling(
             hidden_state=encoder_representation,
             attention_mask=attention_mask,
             prompt_length=prompt_length,
         ) # (batch_size, hidden_size)
+
         projected_representation = self.output_projection(sentence_representation) # (batch_size, hidden_size)
 
         return {
             'reps': sentence_representation,
             'projection': projected_representation
         }
-    
+
+
+class WrappedLusifer(nn.Module):
+    def __init__(
+            self,
+            univeral_learner_name_or_path: str,
+            encoder_name_or_path: str,
+            univeral_learner_backbone_type: str = 't5',
+            encoder_backbone_type: str = 'mistral',
+            is_freeze_univeral_learner: bool = True,
+            pooling_method: str='mean',
+            encoder_lora_name: str = 'encoder_lora',
+            universal_learner_lora_name: str = 'univeral_learner_lora',
+            loar_r: int = 16,
+            lora_alpha: int = 32,
+            dropout: float = 0.1,
+            attn_implementation: str = 'flash_attention_2',
+            model_dtype: torch.dtype = torch.bfloat16,
+            model_revision: str = 'dev',
+            model_checkpoint: Optional[str] = None,
+    ) -> None:
+        super().__init__()
+
+        self.mteb_model_meta = mteb.ModelMeta(
+            name='Lusifer',
+            revision=model_revision,
+            release_date=date.today().strftime("%Y-%m-%d"),
+            languages=None,
+        )
+
+        self.model = Lusifer(
+            univeral_learner_name_or_path=univeral_learner_name_or_path,
+            encoder_name_or_path=encoder_name_or_path,
+            univeral_learner_backbone_type=univeral_learner_backbone_type,
+            encoder_backbone_type=encoder_backbone_type,
+            is_freeze_univeral_learner=is_freeze_univeral_learner,
+            pooling_method=pooling_method,
+            encoder_lora_name=encoder_lora_name,
+            universal_learner_lora_name=universal_learner_lora_name,
+            loar_r=loar_r,
+            lora_alpha=lora_alpha,
+            dropout=dropout,
+            attn_implementation=attn_implementation,
+            model_dtype=model_dtype,
+        )
+
+        if model_checkpoint is not None and os.path.exists(model_checkpoint):
+            print(f"Loading model from checkpoint: {model_checkpoint}")
+            state_dict = torch.load(model_checkpoint, map_location='cpu')
+            self.model.load_state_dict(state_dict['model'], strict=False)
+
+        self.special_tokens = SPECIAL_TOKENS[univeral_learner_backbone_type]
+        self.tokenizer = self.model.tokenizer
+
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        self.num_gpus = torch.cuda.device_count()
+        self.model.to(self.device)
+        if self.num_gpus > 1:
+            self.model = nn.DataParallel(self.model)
+        self.model.eval()
+
     def tokenize_example(
             self, 
             example: Tuple[str, str],
+            is_query: bool = True,
             max_length: int = 512,
     ) -> BatchEncoding:
         bos = self.special_tokens.get("bos", "")
         user_bos = self.special_tokens.get("user_bos", "")
         eos = self.special_tokens.get("eos", "")
         eot = self.special_tokens.get("eot", "")
-        prompt_format = bos + user_bos + "{prompt}: "
-        example_format = prompt_format + "{example}" + eot + eos
-        emb_prompt = prompt_format.format(prompt=example[0])
-        emb_example = example_format.format(prompt=example[0], example=example[1])
+        query_prompt = bos + user_bos + "{instruction}."
+        query_format = bos + user_bos + "{instruction}." + "\n{example}" + eot + eos
+        candidate_prompt = bos + user_bos + "{instruction}. Candidate:" + "\n"
+        candidate_format = bos + user_bos + "{instruction}. Candidate:" + "\n" + "{example}" + eot + eos
+        if is_query:
+            emb_prompt = query_prompt.format(instruction=example[0])
+            emb_example = query_format.format(instruction=example[0], example=example[1])
+        else:
+            emb_prompt = candidate_prompt.format(instruction=example[0])
+            emb_example = candidate_format.format(instruction=example[0], example=example[1])
         model_inputs = self.tokenizer(
             text=emb_example,
             max_length=max_length,
@@ -309,6 +389,7 @@ class Lusifer(nn.Module):
     def encode(
         self,
         sentences: Union[List[str], str],
+        is_query: bool = True,
         batch_size: int = 256,
         max_length: int = 512,
         instruction: str = "",
@@ -323,14 +404,14 @@ class Lusifer(nn.Module):
         all_embeddings = []
         for start_index in tqdm(range(0, len(sentences), batch_size), desc="Batches", disable=len(sentences)<256):
             batch = sentences[start_index:start_index+batch_size]
-            inputs = [self.tokenize_example(example, max_length=max_length) for example in batch]
+            inputs = [self.tokenize_example(example, is_query=is_query, max_length=max_length) for example in batch]
             inputs = self.tokenizer.pad(inputs, return_tensors='pt', pad_to_multiple_of=8)
-            device = next(self.encoder.parameters()).device
-            reps = self(
-                input_ids=inputs['input_ids'].to(device),
-                attention_mask=inputs['attention_mask'].to(device),
-                prompt_length=inputs['prompt_length'].to(device),
-            )['reps']
+            inputs = {
+                'input_ids': inputs['input_ids'].to(self.device),
+                'attention_mask': inputs['attention_mask'].to(self.device),
+                'prompt_length': inputs['prompt_length'].to(self.device),
+            }
+            reps = self.model(**inputs)['reps']
             all_embeddings.append(reps.cpu().to(torch.float32).numpy())
         
         all_embeddings = np.concatenate(all_embeddings, axis=0)
@@ -338,5 +419,19 @@ class Lusifer(nn.Module):
             return all_embeddings[0]
         return all_embeddings
 
+    def encode_queries(self, queries: Union[List[str], str], **kwargs) -> np.ndarray:
+        """Used for encoding the queries of retrieval or reranking tasks"""
+        return self.encode(queries, is_query=True, **kwargs)
+    
+    def encode_corpus(self, corpus: Union[List[str], str, List[Dict[str, str]]], **kwargs) -> np.ndarray:
+        """Used for encoding the corpus of retrieval tasks"""
+        if isinstance(corpus, dict):
+            corpus = [corpus]
+        if isinstance(corpus, list) and isinstance(corpus[0], dict):
+            corpus = [
+                doc["title"] + " " + doc["text"] if "title" in doc 
+                else doc["text"] for doc in corpus
+            ]
+        return self.encode(corpus, is_query=False, **kwargs)
 
 
