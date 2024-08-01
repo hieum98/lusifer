@@ -20,6 +20,8 @@ pip install flash-attn --no-build-isolation
 echo "Setting up the local variables"
 export HF_HOME="~/hf_cache"
 export HUGGINGFACE_TOKEN="your_token"
+export WANDB_API_KEY=""
+wandb login $WANDB_API_KEY
 huggingface-cli login --token $HUGGINGFACE_TOKEN
 
 python -m src.main \
