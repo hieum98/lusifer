@@ -424,9 +424,9 @@ class GradCacheTrainer:
                 # Evaluate model
                 if self.fabric.global_rank == 0:
                     self.fabric.print("Evaluating model")
-                    model_revision = f"{model_revision}_step-{current_step}_epoch-{epoch_num}"
+                    _model_revision = f"{model_revision}_step-{current_step}_epoch-{epoch_num}"
                     eval_model = WrappedLusifer(
-                        model_revision=model_revision, 
+                        model_revision=_model_revision, 
                         model_checkpoint=checkpoint_path,
                         **model_hprams
                         )

@@ -454,7 +454,7 @@ LANG_TO_CODES = {
 
 QUICK_EVAL = [
     # Classification
-    "Banking77Classification",
+    # "Banking77Classification",
     "EmotionClassification",
     # Clustering
     "MedrxivClusteringS2S",
@@ -465,13 +465,13 @@ QUICK_EVAL = [
     "AskUbuntuDupQuestions",
     # Retrieval
     "ArguAna",
-    "NFCorpus",
+    # "NFCorpus",
     "SciFact",
     'MintakaRetrieval',
     'BelebeleRetrieval',
     # STS
-    "BIOSSES",
-    "STSBenchmark",
+    # "BIOSSES",
+    # "STSBenchmark",
     "STS22",
     # Summarization
     "SummEval",
