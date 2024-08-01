@@ -1,14 +1,6 @@
 name: lusifer
 channels:
   - defaults
-  - pytorch
-  - conda-forge
 dependencies:
   - python=3.11
-  - pytorch
-  - torchaudio
-  - pytorch-cuda=12.1
-  - torchvision
-  - lightning
-  - ipykernel
 prefix: /home/hieum/uonlp/miniconda3/envs/lusifer

@@ -7,6 +7,8 @@ ipykernel
 lightning
 mkl-fft
 mkl-random
+pytorch
+lightning
 mteb
 peft
 pip-chill
