@@ -1,7 +1,7 @@
 export home=/sensei-fs/users/chienn/hieu
 
 echo "Installing environment"
-cp $home/Miniconda3-latest-Linux-x86_64.sh ./
+cp $home/Miniconda3-latest-Linux-x86_64.sh ~/
 bash Miniconda3-latest-Linux-x86_64.sh -b -p ~/miniconda3
 eval "$(/$HOME/miniconda3/bin/conda shell.bash hook)"
 
