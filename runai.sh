@@ -32,7 +32,7 @@ python -m src.main \
     --gc_chunk_size 4 \
     --learning_rate 2e-4 \
     --min_learning_rate 5e-5 \
-    --checkpoint_dir $home/luifer/checkpoints/t5-mistral 
+    --checkpoint_dir $home/lusifer/checkpoints/t5-mistral 
 
 echo "Done"
 
