@@ -1,5 +1,5 @@
 brotli
-pytorch
+torch
 cffi
 faiss-cpu
 # flash-attn # Should be manually installed  
