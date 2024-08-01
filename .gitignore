@@ -4,9 +4,8 @@ data/*/*.jsonl
 data/*/qrels
 *__pycache__*
 draft.ipynb
-*.sh
-*.sh
 wandb
 output
 results
 draft.py
+scripts/*.sh
