@@ -1,3 +1,4 @@
+import shutil
 from collections import UserDict
 import pathlib
 from contextlib import nullcontext
@@ -52,6 +53,10 @@ class GradCacheTrainer:
             is_distance=is_distance,
             use_miner=use_miner,
         )
+
+        self.best_overall_metric = 0.0
+        self.best_en = 0.0
+        self.best_multi = 0.0
 
     def get_input_tensors(self, model_input) -> List[torch.Tensor]:
         """
@@ -394,7 +399,7 @@ class GradCacheTrainer:
             
             # Save checkpoint and evaluate
             if current_step % checkpoint_iterval == 0:
-                checkpoint_path = pathlib.Path(checkpoint_dir) / f"checkpoint_step-{current_step}_epoch-{epoch_num}.ckpt"
+                checkpoint_path = pathlib.Path(checkpoint_dir) / "lastest.ckpt"
                 checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
                 stage = {
                     "model": model,
@@ -446,5 +451,17 @@ class GradCacheTrainer:
                     self.fabric.print("Model evaluation finished")
                     del eval_model
                     torch.cuda.empty_cache()
+
+                    # Save best checkpoint based on evaluation
+                    if results['Avg/mteb_quick_avg'] > self.best_en:
+                        self.best_en = results['Avg/mteb_quick_avg']
+                        best_checkpoint_path = pathlib.Path(checkpoint_dir) / "best_en.ckpt"
+                        shutil.copy(checkpoint_path, best_checkpoint_path)
+                        self.fabric.print(f"Best en checkpoint saved at {best_checkpoint_path}")
+                    if results['Avg/multilingual_quick_avg'] > self.best_multi:
+                        self.best_multi = results['Avg/multilingual_quick_avg']
+                        best_checkpoint_path = pathlib.Path(checkpoint_dir) / "best_multi.ckpt"
+                        shutil.copy(checkpoint_path, best_checkpoint_path)
+                        self.fabric.print(f"Best multi checkpoint saved at {best_checkpoint_path}")
                 self.fabric.barrier()
         return checkpoint_path

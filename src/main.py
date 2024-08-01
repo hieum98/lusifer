@@ -268,6 +268,7 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
 
 if __name__ == "__main__":
     os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
+    os.environ['TOKENIZERS_PARALLELISM'] = 'false'
     
     import argparse
     parser = argparse.ArgumentParser(
