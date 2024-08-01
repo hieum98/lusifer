@@ -14,8 +14,6 @@ conda env create -f environment.yaml
 conda activate lusifer
 pip install -r requirements.txt
 # Install flash-attn-2 
-pip install packaging
-pip uninstall -y ninja 
 pip install ninja
 pip install flash-attn --no-build-isolation
 

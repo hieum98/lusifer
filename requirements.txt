@@ -1,4 +1,5 @@
 brotli
+pytorch
 cffi
 faiss-cpu
 # flash-attn # Should be manually installed  
@@ -7,7 +8,6 @@ ipykernel
 lightning
 mkl-fft
 mkl-random
-pytorch
 lightning
 mteb
 peft
@@ -16,9 +16,6 @@ pysocks
 pytorch-metric-learning
 ruamel.yaml
 text-dedup
-torchaudio
-torchvision
-triton
 wandb
 # accelerate # Installed as dependency for peft
 # aiohttp # Installed as dependency for datasets
