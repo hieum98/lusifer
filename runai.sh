@@ -28,7 +28,7 @@ python -m src.main \
     --config_file scripts/configs/t5-mistral.yaml \
     --model_revision t5-mistral.v0.1 \
     --nodes 1 \
-    --devices 4 \
+    --devices 8 \
     --gc_chunk_size 4 \
     --learning_rate 2e-4 \
     --min_learning_rate 5e-5 \

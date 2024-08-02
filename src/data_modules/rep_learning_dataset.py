@@ -157,15 +157,17 @@ class RepLearningCollator:
             q = [instruction, q]
             if len(pos) > min_pos_per_sample:
                 pos = random.sample(pos, min_pos_per_sample) 
+                pos = [[instruction, p] for p in pos]
             if len(neg) > min_neg_per_sample:
                 neg = random.sample(neg, min_neg_per_sample)
+                neg = [[instruction, n] for n in neg]
             batch_query.append(q)
             batch_pos.extend(pos)
             batch_neg.extend(neg)
         
         batch_query = [self.tokenize_example(example=x[1], is_query=True, instruction=x[0]) for x in batch_query]
-        batch_pos = [self.tokenize_example(example=x, is_query=False) for x in batch_pos]
-        batch_neg = [self.tokenize_example(example=x, is_query=False) for x in batch_neg]
+        batch_pos = [self.tokenize_example(example=x[1], is_query=False, instruction=x[0]) for x in batch_pos]
+        batch_neg = [self.tokenize_example(example=x[1], is_query=False, instruction=x[0]) for x in batch_neg]
         len_q = len(batch_query)
         len_p = len(batch_pos)
         len_n = len(batch_neg)

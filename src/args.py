@@ -139,10 +139,6 @@ class TrainingArguments:
         default=True,
         metadata={"help": "Whether to use distance metric or not. If True, LpDistance will be used, otherwise CosineSimilarity."}
     )
-    use_cross_batch_loss: bool = field(
-        default=True,
-        metadata={"help": "Whether to use cross batch loss or not"}
-    )
 
     global_batch_size: int = field(
         default=32,

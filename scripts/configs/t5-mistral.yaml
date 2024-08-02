@@ -28,7 +28,7 @@ model_revision: 't5-mistral.v0.1'
 # Training strategy args
 precision: 'bf16-true'
 strategy: 'fsdp'
-sharding_strategy: 'full_shard'
+sharding_strategy: 'shard_grad_op'
 activation_checkpointing: True
 use_cpu_offload: False
 quantization: False
@@ -39,7 +39,7 @@ use_miner: True
 is_distance: True
 use_cross_batch_loss: True
 # Optimization args
-global_batch_size: 64
+global_batch_size: 96
 eval_batch_size: 32
 max_epochs: 3
 max_steps: 10000
