@@ -106,11 +106,7 @@ class ContrastiveLoss:
             raise ValueError(f"Unsupported loss type: {loss_type}")
 
         if use_miner:
-            self.miner = miners.PairMarginMiner(
-                pos_margin = 0.0 if is_distance else 1.0, # under 1.0 for cosine similarity or over 0.0 for LpDistance will be considered as hard positive 
-                neg_margin = 0.5, # over 0.5 for cosine similarity or under 0.5 for LpDistance will be considered as hard negative.
-                distance=distance
-                )
+            self.miner = miners.MultiSimilarityMiner(epsilon=0.25)
         else:
             self.miner = None
 

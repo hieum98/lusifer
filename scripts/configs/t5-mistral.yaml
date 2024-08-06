@@ -26,7 +26,7 @@ attn_implementation: 'flash_attention_2'
 seed: 777
 model_revision: 't5-mistral.v0.1'
 # Training strategy args
-precision: 'bf16-true'
+precision: 'bf16-mixed'
 strategy: 'fsdp'
 sharding_strategy: 'shard_grad_op'
 activation_checkpointing: True
@@ -37,9 +37,8 @@ loss_type: 'NTXentLoss'
 temperature: 0.05
 use_miner: True
 is_distance: True
-use_cross_batch_loss: True
 # Optimization args
-global_batch_size: 96
+global_batch_size: 72
 eval_batch_size: 32
 max_epochs: 3
 max_steps: 10000

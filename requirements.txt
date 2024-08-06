@@ -15,7 +15,7 @@ pip-chill
 pysocks
 pytorch-metric-learning
 ruamel.yaml
-text-dedup
+# text-dedup
 wandb
 # accelerate # Installed as dependency for peft
 # aiohttp # Installed as dependency for datasets
