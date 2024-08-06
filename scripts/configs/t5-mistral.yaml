@@ -1,6 +1,6 @@
 # Data args
 langs:
-  - all
+  - en
 max_seq_length: 512
 number_training_samples: 200_000
 neg_per_sample: 32
