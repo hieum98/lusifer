@@ -460,13 +460,13 @@ QUICK_EVAL = [
     "MedrxivClusteringS2S",
     "TERRa",
     # PairClassification
-    "TwitterSemEval2015",
+    # "TwitterSemEval2015",
     # Reranking
     "AskUbuntuDupQuestions",
     # Retrieval
     "ArguAna",
     # "NFCorpus",
-    "SciFact",
+    # "SciFact",
     'MintakaRetrieval',
     'BelebeleRetrieval',
     # STS
@@ -474,6 +474,6 @@ QUICK_EVAL = [
     # "STSBenchmark",
     "STS22",
     # Summarization
-    "SummEval",
+    # "SummEval",
 ]
 
