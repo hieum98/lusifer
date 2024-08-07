@@ -28,9 +28,9 @@ python -m src.main \
     --model_revision t5-mistral.v0.1 \
     --nodes 1 \
     --devices 8 \
-    --gc_chunk_size 4 \
-    --learning_rate 2e-4 \
-    --min_learning_rate 5e-5 \
+    --gc_chunk_size 2 \
+    --learning_rate 1e-5 \
+    --min_learning_rate 2e-6 \
     --checkpoint_dir $home/lusifer/checkpoints/t5-mistral 
 
 echo "Done"
