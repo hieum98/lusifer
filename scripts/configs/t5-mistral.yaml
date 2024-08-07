@@ -38,15 +38,15 @@ temperature: 0.05
 use_miner: True
 is_distance: True
 # Optimization args
-global_batch_size: 72
-eval_batch_size: 32
-max_epochs: 3
-max_steps: 10000
+global_batch_size: 64
+eval_batch_size: 128
+max_epochs: 1
+max_steps: 100000
 weight_decay: 0.0
 warmpup_proportion: 0.1
 # grad_norm_clip: 1.0 # Not configured, default is None
 # Checkpoint args
-checkpoint_interval: 200
+checkpoint_interval: 1000
 logger_type: 'wandb'
 logger_name: 't5-mistral'
 
