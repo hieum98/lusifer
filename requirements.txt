@@ -15,6 +15,7 @@ pip-chill
 pysocks
 pytorch-metric-learning
 ruamel.yaml
+sentencepiece
 # text-dedup
 wandb
 # accelerate # Installed as dependency for peft
