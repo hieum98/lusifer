@@ -1,6 +1,7 @@
 # Data args
 langs:
-  - en
+  - all
+use_retrieval_data_only: True
 max_seq_length: 512
 number_training_samples: 200_000
 neg_per_sample: 32
@@ -8,7 +9,7 @@ pos_per_sample: 3
 num_workers: 8
 
 # Model args
-univeral_learner_name_or_path: google/flan-t5-xl
+univeral_learner_name_or_path: google/mt5-small
 encoder_name_or_path: mistralai/Mistral-7B-Instruct-v0.3
 univeral_learner_backbone_type: t5
 encoder_backbone_type: mistral

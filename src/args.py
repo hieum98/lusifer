@@ -8,6 +8,10 @@ class DataArguments:
         default_factory=lambda: ['en'],
         metadata={"help": "The languages to use for training."}
     )
+    use_retrieval_data_only: bool = field(
+        default=False,
+        metadata={"help": "Whether to use retrieval data only or not."}
+    )
     max_seq_length: int = field(
         default=512,
         metadata={"help": "The maximum sequence length."}

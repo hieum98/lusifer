@@ -193,6 +193,7 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
 
     train_data = RepLearningDataModule(
         langs=data_args.langs,
+        use_retrieval_data_only=data_args.use_retrieval_data_only,
         num_workers=data_args.num_workers,
         seed=training_args.seed
     )

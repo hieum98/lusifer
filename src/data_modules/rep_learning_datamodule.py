@@ -122,12 +122,13 @@ class RepLearningDataModule(L.LightningDataModule):
     def __init__(
             self, 
             langs: List[str], 
+            use_retrieval_data_only: bool = False,
             num_workers: int = 4,
             seed: int = 777
             ):
         super().__init__()
         lang_to_data = {
-            'en': EN,
+            'en': EN_CROSS_BATCH if use_retrieval_data_only else EN_CROSS_BATCH + EN_NON_CROSS_BATCH,
             'ar': AR,
             'bn': BN,
             'de': DE,
