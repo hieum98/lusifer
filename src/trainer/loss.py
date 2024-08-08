@@ -160,7 +160,7 @@ class ContrastiveLoss:
                 loss = self.loss_fn(full_embeds, full_labels, hard_pairs)
             else:
                 loss = self.loss_fn(full_embeds, full_labels)
-            loss = loss * world_size # scale the loss to account for the all_gather
+            loss = loss * world_size # scale the loss to account for the same global batch size
         else:
             max_idx = torch.max(q_labels)
             neg_labels = torch.arange(neg_embeds.size(0)*neg_embeds.size(1), device=neg_embeds.device) + max_idx + 1 # (num_neg)
