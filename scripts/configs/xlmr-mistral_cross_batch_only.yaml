@@ -9,9 +9,9 @@ pos_per_sample: 3
 num_workers: 8
 
 # Model args
-univeral_learner_name_or_path: google/mt5-xl
+univeral_learner_name_or_path: FacebookAI/xlm-roberta-large
 encoder_name_or_path: mistralai/Mistral-7B-Instruct-v0.3
-univeral_learner_backbone_type: t5
+univeral_learner_backbone_type: xlm-r
 encoder_backbone_type: mistral
 is_freeze_univeral_learner: false
 # Lora args

@@ -13,6 +13,7 @@ from lightning import seed_everything
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from transformers.models.mistral.modeling_mistral import MistralDecoderLayer
 from transformers.models.t5.modeling_t5 import T5Block
+from transformers.models.xlm_roberta.modeling_xlm_roberta import XLMRobertaLayer
 
 from src.data_modules.rep_learning_datamodule import RepLearningDataModule
 from src.models.lusifer import Lusifer
@@ -25,6 +26,7 @@ from src.trainer.utils import choose_logger, get_cosine_schedule_with_warmup, ge
 backbone_to_layer_type = {
     'mistral': MistralDecoderLayer,
     't5': T5Block,
+    'xlm-r': XLMRobertaLayer,
 }
 
 def get_dataloaders(

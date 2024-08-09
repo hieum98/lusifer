@@ -170,6 +170,7 @@ class Lusifer(nn.Module):
             'torch_dtype': torch.bfloat16 if attn_implementation == "flash_attention_2" else model_dtype,
             'attn_implementation': attn_implementation,
         }
+        model_class = AutoModel
         if not is_llm_bidirectional:
             if 't5' in model_name_or_path:
                 model_class = T5EncoderModel
@@ -178,8 +179,8 @@ class Lusifer(nn.Module):
                     'config': config,
                     'torch_dtype': torch.bfloat16 if attn_implementation == "flash_attention_2" else model_dtype,
                     }
-            else:
-                model_class = AutoModel
+            elif 'xlm' in model_name_or_path:
+                kwargs.pop('attn_implementation')
         else:
             if backbone_type == "mistral":
                 model_class = BidirectionalMistral
@@ -263,13 +264,12 @@ class Lusifer(nn.Module):
             attention_mask: torch.Tensor, # (batch_size, seq_len)
             prompt_length: Optional[torch.Tensor] = None, # (batch_size)
     ):  
-        # get the second to last hidden state that we assume to be more language agnostic representation
         univeral_representation = self.univeral_learner(
             input_ids=input_ids,
             attention_mask=attention_mask,
             output_hidden_states=True,
             return_dict=True
-        ).hidden_states[-2] # (batch_size, seq_len, hidden_size)
+        ).hidden_states[-1] # (batch_size, seq_len, hidden_size)
         
         univeral_representation = self.projection(univeral_representation) # (batch_size, seq_len, hidden_size)
 
