@@ -242,19 +242,21 @@ class RepLearningDataModule(L.LightningDataModule):
 
 if __name__=='__main__':
     from transformers import AutoTokenizer
+    from lightning import seed_everything
 
-    tokenizer = AutoTokenizer.from_pretrained('google/flan-t5-xl')
-    dm = RepLearningDataModule(langs=['all'], num_workers=40, seed=777)
+    seed_everything(777)
+    tokenizer = AutoTokenizer.from_pretrained('FacebookAI/xlm-roberta-large')
+    dm = RepLearningDataModule(langs=['en'], num_workers=0, seed=777, use_retrieval_data_only=True)
     dm.connect(
         world_size=1,
         global_rank=0,
         tokenizer=tokenizer,
-        special_tokens_set='t5',
-        global_batch_size=32,
+        special_tokens_set='xlm-r',
+        global_batch_size=64,
         max_seq_length=512,
         number_training_samples=1_000_000,
-        neg_per_sample=32,
-        pos_per_sample=1,
+        neg_per_sample=32000,
+        pos_per_sample=3000,
     )
     dm.setup()
     dl = dm.train_dataloader()

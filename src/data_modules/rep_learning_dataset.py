@@ -108,6 +108,8 @@ class RepLearningCollator:
             is_query: bool,
             instruction: str="",
             ) -> BatchEncoding:
+        if len(example) == 0:
+            print('example:', example)
         if is_query:
             prompt = self.query_prompt.format(instruction=instruction)
             example = self.query_format.format(instruction=instruction, example=example)
@@ -144,6 +146,7 @@ class RepLearningCollator:
 
         min_pos_per_sample = min([len(example['positive']) for example in batch])
         min_neg_per_sample = min([len(example['negative']) for example in batch])
+        breakpoint()
         assert min_pos_per_sample > 0, "At least one positive example per sample"
         assert min_neg_per_sample > 0, "At least one negative example per sample"
         batch_query = []
@@ -154,20 +157,39 @@ class RepLearningCollator:
             pos = example['positive']
             neg = example['negative']
             instruction = example['instruction']
-            q = [instruction, q]
+    
+            batch_query.append(self.tokenize_example(example=q, is_query=True, instruction=instruction))
+
             if len(pos) > min_pos_per_sample:
                 pos = random.sample(pos, min_pos_per_sample) 
-                pos = [[instruction, p] for p in pos]
+                pos = [(instruction, p) for p in pos]
+            else:
+                pos = [(instruction, p) for p in pos]
+            for p in pos:
+                assert len(p) == 2 and isinstance(p, tuple), f"Positive example must be a tuple of length 2. Got {p}"
+                assert isinstance(p[1], str), f"Positive example must be a tuple of length 2. Got {p}"
+                breakpoint()
+                try:
+                    batch_pos.append(self.tokenize_example(example=p[1], is_query=False, instruction=p[0]))
+                except Exception as e:
+                    print('Error:', e)
+                    print('p:', p)
+
             if len(neg) > min_neg_per_sample:
                 neg = random.sample(neg, min_neg_per_sample)
-                neg = [[instruction, n] for n in neg]
-            batch_query.append(q)
-            batch_pos.extend(pos)
-            batch_neg.extend(neg)
-        
-        batch_query = [self.tokenize_example(example=x[1], is_query=True, instruction=x[0]) for x in batch_query]
-        batch_pos = [self.tokenize_example(example=x[1], is_query=False, instruction=x[0]) for x in batch_pos]
-        batch_neg = [self.tokenize_example(example=x[1], is_query=False, instruction=x[0]) for x in batch_neg]
+                neg = [(instruction, n) for n in neg]
+            else:
+                neg = [(instruction, n) for n in neg]
+            for n in neg:
+                assert len(n) == 2 and isinstance(n, tuple), f"Negative example must be a tuple of length 2. Got {n}"
+                assert isinstance(n[1], str), f"Negative example must be a tuple of length 2. Got {n}"
+                breakpoint()
+                try:
+                    batch_neg.append(self.tokenize_example(example=n[1], is_query=False, instruction=n[0]))
+                except Exception as e:
+                    print('Error:', e)
+                    print('n:', n)
+
         len_q = len(batch_query)
         len_p = len(batch_pos)
         len_n = len(batch_neg)
