@@ -19,7 +19,7 @@ from transformers.models.t5.modeling_t5 import T5EncoderModel
 from peft import PeftModel, LoraConfig, TaskType, get_peft_model
 import mteb
 
-from src.models.modeling_bidirectional_mistral import BidirectionalMistral
+from src.models.bidirectional_modelings.modeling_bidirectional_mistral import BidirectionalMistral
 from src.special_tokens import SPECIAL_TOKENS
 from src.models.utils import find_all_linear_names
 
