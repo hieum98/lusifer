@@ -308,19 +308,19 @@ DATA = {
 }
 
 EN_CROSS_BATCH = [
-    'Hieuman/Arguana', 'Hieuman/CQADupStack', 'Hieuman/DBPedia', 'Hieuman/Fever', 
-    'Hieuman/FiQA', 'Hieuman/HotpotQA', 'Hieuman/MSMarco', 'Hieuman/NFCorpus', 
+    'Hieuman/Arguana', 'Hieuman/CQADupStack', 'Hieuman/DBPedia', 'Hieuman/Fever-reduced', 
+    'Hieuman/FiQA', 'Hieuman/HotpotQA-reduced', 'Hieuman/MSMarco-reduced', 'Hieuman/NFCorpus', 
     'Hieuman/NQ', 'Hieuman/Quora', 'Hieuman/SciDocs', 'Hieuman/SciFact', 'Hieuman/TREC-COVID', 
     'Hieuman/Touche2020', 'Hieuman/20NewsGroups', 'Hieuman/en_MIRACL', 'Hieuman/en_MrTidy',
-    'Hieuman/PQA', 'Hieuman/PubMedQA', 'Hieuman/snli', 'Hieuman/SQuAD', 'Hieuman/STS'
+    'Hieuman/PQA-reduced', 'Hieuman/PubMedQA-reduced', 'Hieuman/snli-reduced', 'Hieuman/SQuAD-reduced', 'Hieuman/STS'
     ]
 
 EN_NON_CROSS_BATCH = [
-    'Hieuman/Amazon-Counterfactual', 'Hieuman/Amazon-Review', 'Hieuman/ArxivP2P', 'Hieuman/ArxivS2S',
+    'Hieuman/Amazon-Counterfactual', 'Hieuman/Amazon-Review-reduced', 'Hieuman/ArxivP2P', 'Hieuman/ArxivS2S-reduced',
     'Hieuman/Banking77', 'Hieuman/biorxivP2P', 'Hieuman/biorxivS2S', 'Hieuman/Emotion',
-    'Hieuman/imdb', 'Hieuman/medrxivP2P', 'Hieuman/medrxivS2S', 'Hieuman/MTOP-Intent',
-    'Hieuman/Reddit-clustering', 'Hieuman/StackExchange-clustering', 'Hieuman/Toxic-conversation',
-    'Hieuman/Tweet-Sentiment'
+    'Hieuman/imdb-reduced', 'Hieuman/medrxivP2P', 'Hieuman/medrxivS2S', 'Hieuman/MTOP-Intent',
+    'Hieuman/Reddit-clustering', 'Hieuman/StackExchange-clustering', 'Hieuman/Toxic-conversation-reduced',
+    'Hieuman/Tweet-Sentiment-reduced'
 ]
 
 AR = ['Hieuman/ar_MIRACL', 'Hieuman/ar_MrTidy']
@@ -357,4 +357,4 @@ VI = ['Hieuman/vi-HealthQA']
 
 YO = ['Hieuman/yo_MIRACL']
 
-ZH = ['Hieuman/zh_MIRACL', 'Hieuman/dureader', 'Hieuman/t2ranking']
+ZH = ['Hieuman/zh_MIRACL', 'Hieuman/dureader-reduced', 'Hieuman/t2ranking-reduced']
