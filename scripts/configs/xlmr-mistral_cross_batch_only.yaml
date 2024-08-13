@@ -47,9 +47,9 @@ weight_decay: 0.0
 warmpup_proportion: 0.1
 # grad_norm_clip: 1.0 # Not configured, default is None
 # Checkpoint args
-checkpoint_interval: 1000
+checkpoint_interval: 500
 logger_type: 'wandb'
-logger_name: 't5-mistral'
+logger_name: 'xlm-mistral'
 
 
 
