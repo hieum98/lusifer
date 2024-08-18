@@ -5,5 +5,9 @@ SPECIAL_TOKENS = {
     'xlm-r': {
         'bos': '<s>',
         'eos': '</s>',
+    },
+    'mistral': {
+        'bos': '<s>',
+        'eos': '</s>',
     }
 }

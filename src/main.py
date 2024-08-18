@@ -12,54 +12,24 @@ from lightning.fabric.strategies import FSDPStrategy, DDPStrategy
 from lightning import seed_everything
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from transformers.models.mistral.modeling_mistral import MistralDecoderLayer
-from transformers.models.t5.modeling_t5 import T5Block
+from transformers.models.mt5.modeling_mt5 import MT5Block
 from transformers.models.xlm_roberta.modeling_xlm_roberta import XLMRobertaLayer
 
-from src.data_modules.rep_learning_datamodule import RepLearningDataModule
+from src.data_modules.rep_learning_datamodule import RepLearningDataModule, get_dataloaders as get_rep_learning_dataloaders
+from src.data_modules.pretraining_datamodule import PretrainingDataModule, get_dataloaders as get_pretraining_dataloaders
 from src.models.lusifer import Lusifer
 from src.models.utils import get_wrapping_policy, get_activation_checkpointing_policy
 from src.trainer.gradcache_trainer import GradCacheTrainer
+from src.trainer.alignment_trainer import AlignmentTrainer
 from src.args import DataArguments, ModelArguments, TrainingArguments
 from src.trainer.utils import choose_logger, get_cosine_schedule_with_warmup, get_trainable_parameters, trainable_filter
 
 
 backbone_to_layer_type = {
     'mistral': MistralDecoderLayer,
-    't5': T5Block,
+    't5': MT5Block,
     'xlm-r': XLMRobertaLayer,
 }
-
-def get_dataloaders(
-        fabric: L.Fabric, 
-        data_module: RepLearningDataModule,
-        tokenizer: PreTrainedTokenizer,
-        data_args: DataArguments, 
-        model_args: ModelArguments,
-        training_args: TrainingArguments,
-        epoch: int = 0,
-        ):
-    data_module.connect(
-        world_size=fabric.world_size,
-        global_rank=fabric.global_rank,
-        tokenizer=tokenizer, 
-        special_tokens_set=model_args.univeral_learner_backbone_type,
-        global_batch_size=training_args.global_batch_size,
-        max_seq_length=data_args.max_seq_length,
-        number_training_samples=data_args.number_training_samples,
-        neg_per_sample=data_args.neg_per_sample,
-        pos_per_sample=data_args.pos_per_sample,
-    )
-    data_module.set_epoch(epoch)
-    with fabric.rank_zero_first():
-        data_module.setup()
-        train_dataloader = data_module.train_dataloader()
-        train_dataloader = fabric.setup_dataloaders(
-            train_dataloader,
-            use_distributed_sampler=False,
-            move_to_device=True
-        )
-    return train_dataloader
-
 
 def main(
         fabric: L.Fabric,
@@ -67,17 +37,21 @@ def main(
         data_args: DataArguments,
         model_args: ModelArguments,
         training_args: TrainingArguments,
+        is_alignmnent: bool = False,
         ):
     fabric.seed_everything(training_args.seed)
 
     # Initialize model
     with fabric.rank_zero_first():
         model = Lusifer(
-            univeral_learner_name_or_path=model_args.univeral_learner_name_or_path,
+            universal_learner_name_or_path=model_args.universal_learner_name_or_path,
             encoder_name_or_path=model_args.encoder_name_or_path,
-            univeral_learner_backbone_type=model_args.univeral_learner_backbone_type,
+            universal_learner_backbone_type=model_args.universal_learner_backbone_type,
             encoder_backbone_type=model_args.encoder_backbone_type,
-            is_freeze_univeral_learner=model_args.is_freeze_univeral_learner,
+            is_freeze_universal_learner=model_args.is_freeze_universal_learner,
+            is_freeze_encoder=True if is_alignmnent else False,
+            connection_type=model_args.connection_type,
+            num_added_tokens=model_args.num_added_tokens,
             encoder_lora_name=model_args.encoder_lora_name,
             universal_learner_lora_name=model_args.universal_learner_lora_name,
             loar_r=model_args.loar_r,
@@ -86,6 +60,7 @@ def main(
             attn_implementation=model_args.attn_implementation,
         )
     tokenizer = model.tokenizer
+    encoder_tokenizer = model.encoder_tokenizer
     trainable_params, all_param, trainable_params_percentage, trainable_layers = get_trainable_parameters(model)
     filter_fn = partial(trainable_filter, trainable_layers=trainable_layers) if trainable_params_percentage < 100 else None
     fabric.print(f"Number of trainable parameters: {trainable_params/1e6:.2f}M")
@@ -96,23 +71,49 @@ def main(
     fabric.print(model)
 
     # Prepare the dataloaders
-    train_dataloader = get_dataloaders(
-        fabric=fabric,
-        data_module=train_data,
-        tokenizer=tokenizer,
-        data_args=data_args,
-        model_args=model_args,
-        training_args=training_args,
-    )
+    if is_alignmnent:
+        train_dataloader = get_pretraining_dataloaders(
+            fabric=fabric,
+            data_module=train_data,
+            universal_learner_tokenizer=tokenizer,
+            lm_tokenizer=encoder_tokenizer,
+            data_args=data_args,
+            model_args=model_args,
+            training_args=training_args,
+        )
+    else:
+        train_dataloader = get_rep_learning_dataloaders(
+            fabric=fabric,
+            data_module=train_data,
+            tokenizer=tokenizer,
+            data_args=data_args,
+            model_args=model_args,
+            training_args=training_args,
+        )
     fabric.barrier()
 
     # Setup the optimizer and scheduler
-    step_per_epoch = len(train_dataloader)
+    if is_alignmnent:
+        num_accumulation_steps = training_args.global_batch_size // (training_args.gc_chunk_size * fabric.world_size)
+        step_per_epoch = len(train_dataloader) // num_accumulation_steps
+    else:
+        num_accumulation_steps = 1
+        step_per_epoch = len(train_dataloader)
+    
     lr_max_steps = min(training_args.max_steps, step_per_epoch * training_args.max_epochs)
     warmup_steps = min(training_args.warmpup_proportion * lr_max_steps, 500)
     lr = training_args.learning_rate
     min_lr = training_args.min_learning_rate
     min_reduce_rate = min_lr / lr
+
+    fabric.print(f"Number of accumulation steps: {num_accumulation_steps}")
+    fabric.print(f"Number of steps per epoch: {step_per_epoch}")
+    fabric.print(f"Data size: {len(train_dataloader)}")
+    fabric.print(f"Number of max steps: {lr_max_steps}")
+    fabric.print(f"Number of warmup steps: {warmup_steps}")
+    fabric.print(f"Initial learning rate: {lr}")
+    fabric.print(f"Minimum learning rate: {min_lr}")
+
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=lr,
@@ -132,7 +133,7 @@ def main(
         "model": model,
         "optimizer": optimizer,
         "scheduler": scheduler,
-        "iter_num": 0,
+        "current_step": 0,
         "epoch_num": 0,
     }
     if training_args.checkpoint_file is not None:
@@ -143,27 +144,45 @@ def main(
     model = stage.pop("model")
 
     # Initialize the trainer
-    trainer = GradCacheTrainer(
-        fabric=fabric,
-        loss_type=training_args.loss_type,
-        temperature=training_args.temperature,
-        is_distance=training_args.is_distance,
-        use_miner=training_args.use_miner,
-        chunk_size=training_args.gc_chunk_size,
-    )
+    if is_alignmnent:
+        trainer = AlignmentTrainer(
+            fabric=fabric,
+            num_accumulation_steps=num_accumulation_steps,
+        )
+    else:
+        trainer = GradCacheTrainer(
+            fabric=fabric,
+            loss_type=training_args.loss_type,
+            temperature=training_args.temperature,
+            is_distance=training_args.is_distance,
+            use_miner=training_args.use_miner,
+            chunk_size=training_args.gc_chunk_size,
+        )
 
     current_epoch_num = stage.get("epoch_num", 0)
     fabric.print(f"Start training from epoch {current_epoch_num}")
     for epoch in range(current_epoch_num, training_args.max_epochs):
-        train_dataloader = get_dataloaders(
-            fabric=fabric,
-            data_module=train_data,
-            tokenizer=tokenizer,
-            data_args=data_args,
-            model_args=model_args,
-            training_args=training_args,
-            epoch=epoch,
-        )
+        if is_alignmnent:
+            train_dataloader = get_pretraining_dataloaders(
+                fabric=fabric,
+                data_module=train_data,
+                universal_learner_tokenizer=tokenizer,
+                lm_tokenizer=encoder_tokenizer,
+                data_args=data_args,
+                model_args=model_args,
+                training_args=training_args,
+                epoch=epoch,
+            )
+        else:
+            train_dataloader = get_rep_learning_dataloaders(
+                fabric=fabric,
+                data_module=train_data,
+                tokenizer=tokenizer,
+                data_args=data_args,
+                model_args=model_args,
+                training_args=training_args,
+                epoch=epoch,
+            )
         fabric.barrier()
         checkpoint_path = trainer.fit_epoch(
             model=model,
@@ -184,21 +203,27 @@ def main(
         stage['model'] = model
         fabric.load(checkpoint_path, stage, strict=False)
         model = stage.pop("model")
-        if stage["iter_num"] > lr_max_steps:
+        if stage["current_step"] > lr_max_steps * num_accumulation_steps:
             break
     
     fabric.print("Training is finished")
 
 
-def setup(data_args: DataArguments, model_args: ModelArguments, training_args: TrainingArguments):
+def setup(data_args: DataArguments, model_args: ModelArguments, training_args: TrainingArguments, is_alignment: bool = False):
     seed_everything(training_args.seed)
 
-    train_data = RepLearningDataModule(
-        langs=data_args.langs,
-        use_retrieval_data_only=data_args.use_retrieval_data_only,
-        num_workers=data_args.num_workers,
-        seed=training_args.seed
-    )
+    if is_alignment:
+        train_data = PretrainingDataModule(
+            num_workers=data_args.num_workers,
+            seed=training_args.seed
+        )
+    else:
+        train_data = RepLearningDataModule(
+            langs=data_args.langs,
+            use_retrieval_data_only=data_args.use_retrieval_data_only,
+            num_workers=data_args.num_workers,
+            seed=training_args.seed
+        )
 
     strategy = training_args.strategy
     if training_args.nodes > 1 or training_args.devices > 1:
@@ -218,7 +243,7 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
                 raise ValueError("Invalid sharding strategy")
 
             backbone_layer_types = {backbone_to_layer_type[model_args.encoder_backbone_type], 
-                                    backbone_to_layer_type[model_args.univeral_learner_backbone_type]}
+                                    backbone_to_layer_type[model_args.universal_learner_backbone_type]}
             wrapping_policy = get_wrapping_policy(backbone_layer_types)
             activation_checkpointing_policy = get_activation_checkpointing_policy(backbone_layer_types)
             
@@ -266,6 +291,7 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
         data_args=data_args,
         model_args=model_args,
         training_args=training_args,
+        is_alignmnent=is_alignment,
     )
 
 
@@ -286,22 +312,22 @@ if __name__ == "__main__":
         "--model_revision", type=str, default=None, help="Model revision"
     )
     parser.add_argument(
-        "--nodes", type=int, default=1, help="Number of nodes"
+        "--nodes", type=int, default=None, help="Number of nodes"
     )
     parser.add_argument(
-        "--devices", type=int, default=1, help="Number of devices"
+        "--devices", type=int, default=None, help="Number of devices"
     )
     parser.add_argument(
-        "--gc_chunk_size", type=int, default=8, help="Gradient cache chunk size"
+        "--gc_chunk_size", type=int, default=None, help="Gradient cache chunk size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=1e-5, help="Learning rate"
+        "--learning_rate", type=float, default=None, help="Learning rate"
     )
     parser.add_argument(
-        "--min_learning_rate", type=float, default=0.0, help="Minimum learning rate"
+        "--min_learning_rate", type=float, default=None, help="Minimum learning rate"
     )
     parser.add_argument(
-        "--checkpoint_dir", type=str, default="checkpoints", help="Directory to save checkpoints"
+        "--checkpoint_dir", type=str, default=None, help="Directory to save checkpoints"
     )
     parser.add_argument(
         "--checkpoint_file", type=str, default=None, help="Checkpoint file to resume training"
@@ -316,13 +342,13 @@ if __name__ == "__main__":
     # Add read-only arguments
     if args.model_revision is not None:
         training_args.model_revision = args.model_revision
-    training_args.nodes = args.nodes
-    training_args.devices = args.devices
-    training_args.gc_chunk_size = args.gc_chunk_size
-    training_args.learning_rate = args.learning_rate
-    training_args.min_learning_rate = args.min_learning_rate
-    training_args.checkpoint_dir = args.checkpoint_dir
-    training_args.checkpoint_file = args.checkpoint_file
+    training_args.nodes = args.nodes if args.nodes is not None else training_args.nodes
+    training_args.devices = args.devices if args.devices is not None else training_args.devices
+    training_args.gc_chunk_size = args.gc_chunk_size if args.gc_chunk_size is not None else training_args.gc_chunk_size
+    training_args.learning_rate = args.learning_rate if args.learning_rate is not None else training_args.learning_rate
+    training_args.min_learning_rate = args.min_learning_rate if args.min_learning_rate is not None else training_args.min_learning_rate
+    training_args.checkpoint_dir = args.checkpoint_dir if args.checkpoint_dir is not None else training_args.checkpoint_dir
+    training_args.checkpoint_file = args.checkpoint_file if args.checkpoint_file is not None else training_args.checkpoint_file
 
     config_file_path = Path(training_args.checkpoint_dir) / "config.yaml"
     config_file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -335,4 +361,5 @@ if __name__ == "__main__":
         data_args=data_args,
         model_args=model_args,
         training_args=training_args,
+        is_alignment=training_args.is_alignment,
     )

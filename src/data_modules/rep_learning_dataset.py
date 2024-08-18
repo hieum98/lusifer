@@ -93,13 +93,11 @@ class RepLearningCollator:
         self.label_pad_token_id = label_pad_token_id
 
         bos = special_tokens.get("bos", "")
-        user_bos = special_tokens.get("user_bos", "")
         eos = special_tokens.get("eos", "")
-        eot = special_tokens.get("eot", "")
-        self.query_prompt = bos + user_bos + "{instruction}." 
-        self.query_format = bos + user_bos + "{instruction}." + "\n{example}" + eot + eos
-        self.candidate_prompt = bos + user_bos + "{instruction}. Candidate:" + "\n"
-        self.candidate_format = bos + user_bos + "{instruction}. Candidate:" + "\n" + "{example}" + eot + eos
+        self.query_prompt = bos + "{instruction}." 
+        self.query_format = bos + "{instruction}." + "\n{example}" + eos
+        self.candidate_prompt = bos + "{instruction}. Candidate:" + "\n"
+        self.candidate_format = bos + "{instruction}. Candidate:" + "\n" + "{example}" + eos
         
 
     def tokenize_example(

@@ -17,7 +17,7 @@ is_freeze_universal_learner: false
 connection_type: ff
 num_added_tokens: 0
 # Lora args
-encoder_lora_name: encoder_lora
+encoder_lora_name: null # When alignment training, we freeze the encoder
 universal_learner_lora_name: universal_learner_lora # Not configured, default is None
 loar_r: 16
 lora_alpha: 32
@@ -26,7 +26,7 @@ dropout: 0.1
 attn_implementation: 'flash_attention_2'
 
 # Training args
-is_alignment: false
+is_alignment: true
 seed: 777
 model_revision: 't5-mistral.v0.1'
 # Training strategy args

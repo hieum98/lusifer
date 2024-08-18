@@ -36,7 +36,7 @@ class DataArguments:
 
 @dataclass
 class ModelArguments:
-    univeral_learner_name_or_path: str = field(
+    universal_learner_name_or_path: str = field(
         default='google-t5/t5-large',
         metadata={"help": "The name or path of the universal learner model."}
     )
@@ -44,7 +44,7 @@ class ModelArguments:
         default='mistralai/Mistral-7B-Instruct-v0.3',
         metadata={"help": "The name or path of the encoder model."}
     )
-    univeral_learner_backbone_type: str = field(
+    universal_learner_backbone_type: str = field(
         default='t5',
         metadata={"help": "The type of the universal learner backbone."}
     )
@@ -52,9 +52,17 @@ class ModelArguments:
         default='mistral',
         metadata={"help": "The type of the encoder backbone."}
     )
-    is_freeze_univeral_learner: bool = field(
+    is_freeze_universal_learner: bool = field(
         default=True,
         metadata={"help": "Whether to freeze the universal learner model or not."} 
+    )
+    connection_type: str = field(
+        default='ff',
+        metadata={"help": "The connection type between the universal learner and encoder. Can be 'ff' or 'attn'."}
+    )
+    num_added_tokens: int = field(
+        default=0,
+        metadata={"help": "The number of added tokens."}
     )
     encoder_lora_name: str = field(
         default=None,
@@ -84,6 +92,10 @@ class ModelArguments:
 
 @dataclass
 class TrainingArguments:
+    is_alignment: bool = field(
+        default=False,
+        metadata={"help": "Whether to use alignment training or not."}
+    )
     seed: int = field(
         default=777,
         metadata={"help": "Seed for reproducibility"}

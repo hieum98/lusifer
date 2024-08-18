@@ -351,13 +351,13 @@ class GradCacheTrainer:
         """
         optimizer: torch.optim.Optimizer = stage["optimizer"]
         scheduler : torch.optim.lr_scheduler.LambdaLR = stage.get("scheduler", None)
-        current_step = stage.get("toal_iter_num", 0) # checkpoint iteration number
+        current_step = stage.get("current_step", 0) # checkpoint iteration number
         epoch_num = stage.get("epoch_num", 0) # checkpoint epoch number
         self.fabric.print(f"Starting epoch {epoch_num} with {len(train_loader)} iterations")
         model.train()
 
         for batch_idx, batch in enumerate(train_loader):
-            if current_step > batch_idx:
+            if current_step > len(train_loader)*epoch_num + batch_idx:
                 continue
             if current_step > lr_max_steps:
                 break
@@ -397,15 +397,15 @@ class GradCacheTrainer:
                     f" Iter time: {metrics['iter_time']:.4f}s |"
                 )
             
-            # Save checkpoint and evaluate
-            if current_step % checkpoint_iterval == 0:
+            # Save checkpoint and evaluate each checkpoint interval steps or at the end of the epoch or at the end of training
+            if current_step % checkpoint_iterval == 0 or current_step == lr_max_steps or batch_idx + 1 == len(train_loader):
                 checkpoint_path = pathlib.Path(checkpoint_dir) / "lastest.ckpt"
                 checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
                 stage = {
                     "model": model,
                     "optimizer": optimizer,
                     "scheduler": scheduler,
-                    "iter_num": current_step,
+                    "current_step": current_step,
                     "epoch_num": epoch_num if batch_idx < len(train_loader)-1 else epoch_num + 1,
                 }
                 if checkpoint_filter is not None:

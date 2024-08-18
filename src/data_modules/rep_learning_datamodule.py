@@ -7,6 +7,7 @@ from datasets import load_dataset
 from tqdm import tqdm
 from transformers import PreTrainedTokenizer
 
+from src.args import DataArguments, ModelArguments, TrainingArguments
 from src.data_modules.constants import *
 from src.data_modules.rep_learning_dataset import RepLearningDataset, ConcatRepLearningDataset, RepLearningCollator
 from src.special_tokens import SPECIAL_TOKENS
@@ -118,6 +119,12 @@ class ConcatedDataSampler(Sampler):
         self.epoch = epoch
 
 
+class ClusteringDataSampler(Sampler):
+    """
+    A sampler for clustering that gurantees that each batch will comes from same dataset and same cluster.
+    """ 
+
+
 class RepLearningDataModule(L.LightningDataModule):
     def __init__(
             self, 
@@ -182,8 +189,13 @@ class RepLearningDataModule(L.LightningDataModule):
         self.neg_per_sample = neg_per_sample
         self.pos_per_sample = pos_per_sample
         self.batch_size = self.global_batch_size // self.world_size
-        assert self.global_batch_size % self.world_size == 0, "Global batch size must be divisible by world size."
-        assert self.batch_size > 0, "Batch size must be greater than 0. i.e. world_size must be less than or equal to global_batch_size"
+        if self.global_batch_size % self.world_size != 0:
+            self.global_batch_size = self.batch_size * self.world_size
+            print(f"Global batch size must be divisible by world size. Setting global batch size to {self.global_batch_size}")
+        if self.batch_size <= 0:
+            self.batch_size = 1
+            self.global_batch_size = self.world_size
+            print(f"Batch size must be greater than 0. i.e. world_size must be less than or equal to global_batch_size. Setting batch size to {self.batch_size}")
     
     def set_epoch(self, epoch: int) -> None:
         self.seed = self.seed + epoch
@@ -239,6 +251,37 @@ class RepLearningDataModule(L.LightningDataModule):
             collate_fn=collator,
         )
 
+
+def get_dataloaders(
+        fabric: L.Fabric, 
+        data_module: RepLearningDataModule,
+        tokenizer: PreTrainedTokenizer,
+        data_args: DataArguments, 
+        model_args: ModelArguments,
+        training_args: TrainingArguments,
+        epoch: int = 0,
+        ):
+    data_module.connect(
+        world_size=fabric.world_size,
+        global_rank=fabric.global_rank,
+        tokenizer=tokenizer, 
+        special_tokens_set=model_args.universal_learner_backbone_type,
+        global_batch_size=training_args.global_batch_size,
+        max_seq_length=data_args.max_seq_length,
+        number_training_samples=data_args.number_training_samples,
+        neg_per_sample=data_args.neg_per_sample,
+        pos_per_sample=data_args.pos_per_sample,
+    )
+    data_module.set_epoch(epoch)
+    with fabric.rank_zero_first():
+        data_module.setup()
+        train_dataloader = data_module.train_dataloader()
+        train_dataloader = fabric.setup_dataloaders(
+            train_dataloader,
+            use_distributed_sampler=False,
+            move_to_device=True
+        )
+    return train_dataloader
 
 if __name__=='__main__':
     from transformers import AutoTokenizer

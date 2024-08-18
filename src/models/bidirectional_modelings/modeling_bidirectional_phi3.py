@@ -1,17 +1,17 @@
-# The following code is modified from transformers.models.qwen2.modeling_qwen2.py
+# The following code is modified from transformers.models.phi3.modeling_phi3.py
 
 from typing import List, Optional, Tuple, Union
 import einops
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
-from transformers.models.qwen2.modeling_qwen2 import (
-    Qwen2Config,
-    Qwen2PreTrainedModel,
-    Qwen2DecoderLayer,
-    Qwen2RMSNorm,
-    QWEN2_START_DOCSTRING,
-    QWEN2_INPUTS_DOCSTRING
+from transformers.models.phi3.modeling_phi3 import (
+    Phi3Config,
+    Phi3PreTrainedModel,
+    Phi3DecoderLayer,
+    Phi3RMSNorm,
+    PHI3_START_DOCSTRING,
+    PHI3_INPUTS_DOCSTRING
 )
 from transformers.modeling_attn_mask_utils import AttentionMaskConverter, _prepare_4d_attention_mask, _prepare_4d_attention_mask_for_sdpa
 from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast
@@ -23,30 +23,35 @@ from transformers.utils import (
     replace_return_docstrings,
 )
 
-_CONFIG_FOR_DOC = "Qwen2Config"
+_CONFIG_FOR_DOC = "Phi3Config"
 
 logger = logging.get_logger(__name__)
 
 
-
-class BidirectionalQwen2(Qwen2PreTrainedModel):
+@add_start_docstrings(
+    "The bare Phi-3 model outputting raw hidden-states without any specific head on top.",
+    PHI3_START_DOCSTRING,
+)
+class BidirectionalPhi3(Phi3PreTrainedModel):
     """
-    Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`Qwen2DecoderLayer`]
+    Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`Phi3DecoderLayer`]
 
     Args:
-        config: Qwen2Config
+        config: Phi3Config
     """
-    def __init__(self, config: Qwen2Config):
+
+    def __init__(self, config: Phi3Config):
         super().__init__(config)
         self.padding_idx = config.pad_token_id
         self.vocab_size = config.vocab_size
 
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
+        self.embed_dropout = nn.Dropout(config.embd_pdrop)
         self.layers = nn.ModuleList(
-            [Qwen2DecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+            [Phi3DecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
         )
         self._attn_implementation = config._attn_implementation
-        self.norm = Qwen2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.norm = Phi3RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
         self.gradient_checkpointing = False
         # Initialize weights and apply final processing
@@ -88,7 +93,136 @@ class BidirectionalQwen2(Qwen2PreTrainedModel):
                 attention_mask, input_tensor.dtype,
             )
         return attention_mask
-    
+
+    @add_start_docstrings_to_model_forward(PHI3_INPUTS_DOCSTRING)
+    def forward(
+        self,
+        input_ids: torch.LongTensor = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[List[torch.FloatTensor]] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+        cache_position: Optional[torch.LongTensor] = None,
+        is_causal: Optional[bool] = True,
+    ) -> Union[Tuple, BaseModelOutputWithPast]:
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+        use_cache = use_cache if use_cache is not None else self.config.use_cache
+
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        if (input_ids is None) ^ (inputs_embeds is not None):
+            raise ValueError(
+                "You cannot specify both input_ids and inputs_embeds at the same time, and must specify either one"
+            )
+
+        if self.gradient_checkpointing and self.training:
+            if use_cache:
+                logger.warning_once(
+                    "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`..."
+                )
+                use_cache = False
+
+        use_legacy_cache = False
+        if use_cache and not isinstance(past_key_values, Cache):
+            use_legacy_cache = True
+            past_key_values = DynamicCache.from_legacy_cache(past_key_values)
+            logger.warning_once(
+                "We detected that you are passing `past_key_values` as a tuple and this is deprecated and will be removed in v4.43. "
+                "Please use an appropriate `Cache` class (https://huggingface.co/docs/transformers/v4.41.3/en/internal/generation_utils#transformers.Cache)"
+            )
+
+        if inputs_embeds is None:
+            inputs_embeds = self.embed_tokens(input_ids)
+
+        if cache_position is None:
+            past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
+            cache_position = torch.arange(
+                past_seen_tokens, past_seen_tokens + inputs_embeds.shape[1], device=inputs_embeds.device
+            )
+        if position_ids is None:
+            position_ids = cache_position.unsqueeze(0)
+
+        if is_causal:
+            attention_mask = self._update_causal_mask(
+                attention_mask, inputs_embeds, cache_position, past_key_values, output_attentions
+            )
+        else:
+            attention_mask = self._update_attn_mask(
+                attention_mask, inputs_embeds, cache_position, past_key_values, output_attentions
+            )
+
+        hidden_states = inputs_embeds
+
+        # decoder layers
+        all_hidden_states = () if output_hidden_states else None
+        all_self_attns = () if output_attentions else None
+        next_decoder_cache = None
+
+        for decoder_layer in self.layers:
+            if is_causal:
+                decoder_layer.self_attn.is_causal = True
+            else:
+                decoder_layer.self_attn.is_causal = False
+
+            if output_hidden_states:
+                all_hidden_states += (hidden_states,)
+
+            if self.gradient_checkpointing and self.training:
+                layer_outputs = self._gradient_checkpointing_func(
+                    decoder_layer.__call__,
+                    hidden_states,
+                    attention_mask,
+                    position_ids,
+                    past_key_values,
+                    output_attentions,
+                    use_cache,
+                    cache_position,
+                )
+            else:
+                layer_outputs = decoder_layer(
+                    hidden_states,
+                    attention_mask=attention_mask,
+                    position_ids=position_ids,
+                    past_key_value=past_key_values,
+                    output_attentions=output_attentions,
+                    use_cache=use_cache,
+                    cache_position=cache_position,
+                )
+
+            hidden_states = layer_outputs[0]
+
+            if use_cache:
+                next_decoder_cache = layer_outputs[2 if output_attentions else 1]
+
+            if output_attentions:
+                all_self_attns += (layer_outputs[1],)
+
+        hidden_states = self.norm(hidden_states)
+
+        # add hidden states from the last decoder layer
+        if output_hidden_states:
+            all_hidden_states += (hidden_states,)
+
+        next_cache = None
+        if use_cache:
+            next_cache = next_decoder_cache.to_legacy_cache() if use_legacy_cache else next_decoder_cache
+        if not return_dict:
+            return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
+        return BaseModelOutputWithPast(
+            last_hidden_state=hidden_states,
+            past_key_values=next_cache,
+            hidden_states=all_hidden_states,
+            attentions=all_self_attns,
+        )
+
+    # Copied from transformers.models.llama.modeling_llama.LlamaModel._update_causal_mask
     def _update_causal_mask(
         self,
         attention_mask: torch.Tensor,
@@ -169,165 +303,46 @@ class BidirectionalQwen2(Qwen2PreTrainedModel):
 
         return causal_mask
 
-    @add_start_docstrings_to_model_forward(QWEN2_INPUTS_DOCSTRING)
-    def forward(
-        self,
-        input_ids: torch.LongTensor = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.LongTensor] = None,
-        past_key_values: Optional[Union[Cache, List[torch.FloatTensor]]] = None,
-        inputs_embeds: Optional[torch.FloatTensor] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
-        cache_position: Optional[torch.LongTensor] = None,
-        is_causal: Optional[bool] = False,
-    ) -> Union[Tuple, BaseModelOutputWithPast]:
-        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
-        output_hidden_states = (
-            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
-        )
-        use_cache = use_cache if use_cache is not None else self.config.use_cache
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        if (input_ids is None) ^ (inputs_embeds is not None):
-            raise ValueError(
-                "You cannot specify both input_ids and inputs_embeds at the same time, and must specify either one"
-            )
-
-        if self.gradient_checkpointing and self.training and use_cache:
-            logger.warning_once(
-                "`use_cache=True` is incompatible with gradient checkpointing. Setting `use_cache=False`."
-            )
-            use_cache = False
-
-        if inputs_embeds is None:
-            inputs_embeds = self.embed_tokens(input_ids)
-
-        return_legacy_cache = False
-        if use_cache and not isinstance(past_key_values, Cache):  # kept for BC (non `Cache` `past_key_values` inputs)
-            return_legacy_cache = True
-            past_key_values = DynamicCache.from_legacy_cache(past_key_values)
-            logger.warning_once(
-                "We detected that you are passing `past_key_values` as a tuple and this is deprecated and will be removed in v4.43. "
-                "Please use an appropriate `Cache` class (https://huggingface.co/docs/transformers/v4.41.3/en/internal/generation_utils#transformers.Cache)"
-            )
-
-        if cache_position is None:
-            past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
-            cache_position = torch.arange(
-                past_seen_tokens, past_seen_tokens + inputs_embeds.shape[1], device=inputs_embeds.device
-            )
-        if position_ids is None:
-            position_ids = cache_position.unsqueeze(0)
-
-        if is_causal:
-            attention_mask = self._update_causal_mask(
-                attention_mask, inputs_embeds, cache_position, past_key_values, output_attentions
-            )
-        else:
-            attention_mask = self._update_attn_mask(
-                attention_mask, inputs_embeds, cache_position, past_key_values, output_attentions
-            )
-
-        hidden_states = inputs_embeds
-
-        # decoder layers
-        all_hidden_states = () if output_hidden_states else None
-        all_self_attns = () if output_attentions else None
-        next_decoder_cache = None
-
-        for decoder_layer in self.layers:
-            if is_causal:
-                decoder_layer.self_attn.is_causal = True
-            else:
-                decoder_layer.self_attn.is_causal = False
-
-            if output_hidden_states:
-                all_hidden_states += (hidden_states,)
-
-            if self.gradient_checkpointing and self.training:
-                layer_outputs = self._gradient_checkpointing_func(
-                    decoder_layer.__call__,
-                    hidden_states,
-                    attention_mask,
-                    position_ids,
-                    past_key_values,
-                    output_attentions,
-                    use_cache,
-                    cache_position,
-                )
-            else:
-                layer_outputs = decoder_layer(
-                    hidden_states,
-                    attention_mask=attention_mask,
-                    position_ids=position_ids,
-                    past_key_value=past_key_values,
-                    output_attentions=output_attentions,
-                    use_cache=use_cache,
-                    cache_position=cache_position,
-                )
-
-            hidden_states = layer_outputs[0]
-
-            if use_cache:
-                next_decoder_cache = layer_outputs[2 if output_attentions else 1]
-
-            if output_attentions:
-                all_self_attns += (layer_outputs[1],)
-
-        hidden_states = self.norm(hidden_states)
-
-        # add hidden states from the last decoder layer
-        if output_hidden_states:
-            all_hidden_states += (hidden_states,)
-
-        next_cache = next_decoder_cache if use_cache else None
-        if return_legacy_cache:
-            next_cache = next_cache.to_legacy_cache()
-
-        if not return_dict:
-            return tuple(v for v in [hidden_states, next_cache, all_hidden_states, all_self_attns] if v is not None)
-        return BaseModelOutputWithPast(
-            last_hidden_state=hidden_states,
-            past_key_values=next_cache,
-            hidden_states=all_hidden_states,
-            attentions=all_self_attns,
-        )
-
-
-class BidirectionalQwen2ForCausalLM(Qwen2PreTrainedModel):
+class BidirectionalPhi3ForCausalLM(Phi3PreTrainedModel):
     _tied_weights_keys = ["lm_head.weight"]
 
+    # Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM.__init__ with Llama->Phi3
     def __init__(self, config):
         super().__init__(config)
-        self.model = BidirectionalQwen2(config)
+        self.model = BidirectionalPhi3(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
         # Initialize weights and apply final processing
         self.post_init()
 
+    # Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM.get_input_embeddings
     def get_input_embeddings(self):
         return self.model.embed_tokens
 
+    # Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM.set_input_embeddings
     def set_input_embeddings(self, value):
         self.model.embed_tokens = value
 
+    # Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM.get_output_embeddings
     def get_output_embeddings(self):
         return self.lm_head
 
+    # Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM.set_output_embeddings
     def set_output_embeddings(self, new_embeddings):
         self.lm_head = new_embeddings
 
+    # Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM.set_decoder
     def set_decoder(self, decoder):
         self.model = decoder
 
+    # Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM.get_decoder
     def get_decoder(self):
         return self.model
 
-    @add_start_docstrings_to_model_forward(QWEN2_INPUTS_DOCSTRING)
+    # Ignore copy
+    @add_start_docstrings_to_model_forward(PHI3_INPUTS_DOCSTRING)
     @replace_return_docstrings(output_type=CausalLMOutputWithPast, config_class=_CONFIG_FOR_DOC)
     def forward(
         self,
@@ -342,7 +357,7 @@ class BidirectionalQwen2ForCausalLM(Qwen2PreTrainedModel):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
-        is_causal: Optional[bool] = False,
+        is_causal: Optional[bool] = True,
     ) -> Union[Tuple, CausalLMOutputWithPast]:
         r"""
         Args:
@@ -356,18 +371,18 @@ class BidirectionalQwen2ForCausalLM(Qwen2PreTrainedModel):
         Example:
 
         ```python
-        >>> from transformers import AutoTokenizer, Qwen2ForCausalLM
+        >>> from transformers import AutoTokenizer, Phi3ForCausalLM
 
-        >>> model = Qwen2ForCausalLM.from_pretrained(PATH_TO_CONVERTED_WEIGHTS)
-        >>> tokenizer = AutoTokenizer.from_pretrained(PATH_TO_CONVERTED_TOKENIZER)
+        >>> model = Phi3ForCausalLM.from_pretrained("microsoft/phi-3-mini-4k-instruct")
+        >>> tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-3-mini-4k-instruct")
 
-        >>> prompt = "Hey, are you conscious? Can you talk to me?"
+        >>> prompt = "This is an example script ."
         >>> inputs = tokenizer(prompt, return_tensors="pt")
 
         >>> # Generate
         >>> generate_ids = model.generate(inputs.input_ids, max_length=30)
         >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-        "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
+        'This is an example script .\n Certainly! Below is a sample script that demonstrates a simple task, such as calculating the sum'
         ```"""
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
@@ -387,7 +402,6 @@ class BidirectionalQwen2ForCausalLM(Qwen2PreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
-            cache_position=cache_position,
             is_causal=is_causal,
         )
 
@@ -420,6 +434,7 @@ class BidirectionalQwen2ForCausalLM(Qwen2PreTrainedModel):
             attentions=outputs.attentions,
         )
 
+    # Copied from transformers.models.persimmon.modeling_persimmon.PersimmonForCausalLM.prepare_inputs_for_generation
     def prepare_inputs_for_generation(
         self,
         input_ids,
@@ -431,7 +446,6 @@ class BidirectionalQwen2ForCausalLM(Qwen2PreTrainedModel):
         **kwargs,
     ):
         past_length = 0
-        # Omit tokens covered by past_key_values
         if past_key_values is not None:
             # Past key values are always initialized with a `Cache` object -> no need for if-else anymore
             past_length = cache_position[0] if cache_position is not None else past_key_values.get_seq_length()
@@ -494,6 +508,7 @@ class BidirectionalQwen2ForCausalLM(Qwen2PreTrainedModel):
         return model_inputs
 
     @staticmethod
+    # Copied from transformers.models.llama.modeling_llama.LlamaForCausalLM._reorder_cache
     def _reorder_cache(past_key_values, beam_idx):
         reordered_past = ()
         for layer_past in past_key_values:
@@ -501,7 +516,5 @@ class BidirectionalQwen2ForCausalLM(Qwen2PreTrainedModel):
                 tuple(past_state.index_select(0, beam_idx.to(past_state.device)) for past_state in layer_past),
             )
         return reordered_past
-
-
 
 

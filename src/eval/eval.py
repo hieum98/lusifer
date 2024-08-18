@@ -173,8 +173,13 @@ if __name__=='__main__':
     os.environ['HF_DATASETS_TRUST_REMOTE_CODE']='1'
     
     import argparse
+    from transformers import HfArgumentParser
+    from src.args import DataArguments, ModelArguments, TrainingArguments
 
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config_file", type=str, default=None, help="Path to the config file"
+    )
     parser.add_argument(
         "--checkpoint_path", type=str, default=None, help="Path to the model checkpoint"
     )
@@ -192,17 +197,27 @@ if __name__=='__main__':
     )
 
     args = parser.parse_args()
+    config_file = args.config_file
+
+    hf_parser = HfArgumentParser((DataArguments, ModelArguments, TrainingArguments))
+    print(f"Loading yaml config {config_file}")
+    data_args, model_args, training_args = hf_parser.parse_yaml_file(yaml_file=config_file)
 
     model = WrappedLusifer(
-        univeral_learner_name_or_path='google/flan-t5-xl',
-        encoder_name_or_path='mistralai/Mistral-7B-Instruct-v0.3',
-        univeral_learner_backbone_type='t5',
-        encoder_backbone_type='mistral',
-        is_freeze_univeral_learner=True,
-        pooling_method='mean',
-        encoder_lora_name=None,
-        universal_learner_lora_name=None,
-        attn_implementation='flash_attention_2',
+        universal_learner_name_or_path=model_args.universal_learner_name_or_path,
+        encoder_name_or_path=model_args.encoder_name_or_path,
+        universal_learner_backbone_type=model_args.universal_learner_backbone_type,
+        encoder_backbone_type=model_args.encoder_backbone_type,
+        is_freeze_universal_learner=model_args.is_freeze_universal_learner,
+        is_freeze_encoder=True if training_args.is_alignment else False,
+        connection_type=model_args.connection_type,
+        num_added_tokens=model_args.num_added_tokens,
+        encoder_lora_name=model_args.encoder_lora_name,
+        universal_learner_lora_name=model_args.universal_learner_lora_name,
+        loar_r=model_args.loar_r,
+        lora_alpha=model_args.lora_alpha,
+        dropout=model_args.dropout,
+        attn_implementation=model_args.attn_implementation,
         model_checkpoint=args.checkpoint_path,
         )
     batch_size = args.batch_size * model.num_gpus if model.num_gpus > 0 else args.batch_size

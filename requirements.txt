@@ -18,6 +18,7 @@ ruamel.yaml
 sentencepiece
 # text-dedup
 wandb
+tensorboard
 # accelerate # Installed as dependency for peft
 # aiohttp # Installed as dependency for datasets
 # aiosignal # Installed as dependency for aiohttp

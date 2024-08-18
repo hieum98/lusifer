@@ -23,6 +23,10 @@ DATA = {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/hotpotqa_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
+    'Hieuman/MSMarco': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/beir/msmarco_hard_negatives.jsonl',
+        'instruction': 'Given a question, retrieve passages that answer the question.'
+    },
     'Hieuman/MSMarco-reduced': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/msmarco_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
@@ -99,6 +103,11 @@ DATA = {
         'instruction': 'Classify the emotion expressed in the given Twitter message into one of the six emotions:anger, fear, joy, love, sadness, and surprise.',
         'enable_cross_batch_negative_sampling': False
     },
+    'Hieuman/imdb': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/imdb_hard_negatives.jsonl',
+        'instruction': 'Classify the sentiment expressed in the given text as positive or negative.',
+        'enable_cross_batch_negative_sampling': False
+    },
     'Hieuman/imdb-reduced': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/imdb_hard_negatives.jsonl',
         'instruction': 'Classify the sentiment expressed in the given text as positive or negative.',
@@ -129,6 +138,10 @@ DATA = {
     },
     'Hieuman/PQA-reduced': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/pqa_hard_negatives.jsonl',
+        'instruction': 'Given a question, retrieve passages that answer the question.'
+    },
+    'Hieuman/PubMedQA': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/pubmedqa_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
     'Hieuman/PubMedQA-reduced': {
@@ -304,8 +317,23 @@ DATA = {
     'Hieuman/t2ranking-reduced': {
         'data_path': '/home/hieum/uonlp/lusifer/data/zh/t2ranking_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
+    },
+    'Hieuman/wikitext-103-filtered': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/wikitext-103-filtered.jsonl',
+        'instruction': ''
     }
 }
+
+PRETRAINING_DATASETS = [
+    'Hieuman/wikitext-103-filtered', 
+    'Hieuman/biorxivP2P', 
+    'Hieuman/ArxivP2P', 
+    'Hieuman/imdb'
+]
+
+PRETRAINING_PAIR_DATASETS = [
+    'Hieuman/MSMarco', 'Hieuman/PubMedQA'
+]
 
 EN_CROSS_BATCH = [
     'Hieuman/Arguana', 'Hieuman/CQADupStack', 'Hieuman/DBPedia', 'Hieuman/Fever-reduced', 

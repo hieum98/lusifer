@@ -9,11 +9,13 @@ pos_per_sample: 3
 num_workers: 8
 
 # Model args
-univeral_learner_name_or_path: FacebookAI/xlm-roberta-large
+universal_learner_name_or_path: FacebookAI/xlm-roberta-large
 encoder_name_or_path: mistralai/Mistral-7B-Instruct-v0.3
-univeral_learner_backbone_type: xlm-r
+universal_learner_backbone_type: xlm-r
 encoder_backbone_type: mistral
-is_freeze_univeral_learner: false
+is_freeze_universal_learner: false
+connection_type: ff
+num_added_tokens: 0
 # Lora args
 encoder_lora_name: encoder_lora
 universal_learner_lora_name: universal_learner_lora # Not configured, default is None
@@ -24,6 +26,7 @@ dropout: 0.1
 attn_implementation: 'flash_attention_2'
 
 # Training args
+is_alignment: false
 seed: 777
 model_revision: 't5-mistral.v0.1'
 # Training strategy args
