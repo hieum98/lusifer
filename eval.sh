@@ -35,8 +35,4 @@ python -m src.eval.eval --model_name_or_path BAAI/bge-m3 --output_folder $home/l
 
 python -m src.eval.eval --model_name_or_path izhx/udever-bloom-7b1 --output_folder $home/lusifer/udever-bloom-7B --batch_size 8
 
-python -m src.eval.eval --model_name_or_path pkshatech/m-ST5 --output_folder $home/lusifer/mst5 --batch_size 128
-
 python -m src.eval.eval --model_name_or_path sentence-transformers/paraphrase-multilingual-mpnet-base-v2 --output_folder $home/lusifer/mmpnet-v2 --batch_size 256
-
-python -m src.eval.eval --model_name_or_path yaushian/mSimCSE --output_folder $home/lusifer/msimcse --batch_size 256
