@@ -3,6 +3,7 @@ torch
 cffi
 faiss-cpu
 # flash-attn # Should be manually installed  
+FlagEmbedding
 gmpy2
 ipykernel
 lightning
