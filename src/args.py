@@ -205,6 +205,10 @@ class TrainingArguments:
         default=None,
         metadata={"help": "File to save checkpoints"}
     )
+    only_load_model: bool = field(
+        default=False,
+        metadata={"help": "Whether to only load the model or not"}
+    )
     checkpoint_interval: int = field(
         default=1000,
         metadata={"help": "Interval to save the checkpoint"}
