@@ -3,7 +3,7 @@ langs:
   - en
 use_retrieval_data_only: True
 max_seq_length: 512
-number_training_samples: 200_000
+number_training_samples: 50_000
 neg_per_sample: 32
 pos_per_sample: 3
 num_workers: 8

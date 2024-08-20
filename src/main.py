@@ -348,7 +348,7 @@ if __name__ == "__main__":
     training_args.learning_rate = args.learning_rate if args.learning_rate is not None else training_args.learning_rate
     training_args.min_learning_rate = args.min_learning_rate if args.min_learning_rate is not None else training_args.min_learning_rate
     training_args.checkpoint_dir = args.checkpoint_dir if args.checkpoint_dir is not None else training_args.checkpoint_dir
-    training_args.checkpoint_file = args.checkpoint_file if args.checkpoint_file is not None else training_args.checkpoint_file
+    training_args.checkpoint_file = args.checkpoint_file
 
     config_file_path = Path(training_args.checkpoint_dir) / "config.yaml"
     config_file_path.parent.mkdir(parents=True, exist_ok=True)

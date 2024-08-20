@@ -50,7 +50,10 @@ class AlignmentDataset(PretrainingDataset):
         assert self.data_name in PRETRAINING_PAIR_DATASETS, f"Data name {self.data_name} not in {PRETRAINING_PAIR_DATASETS}"
         text = example['query']
         pos = self.rng.choice(example['positive'])
-        return {'query': text, 'answer': pos, 'instruction': self.instruction}
+        if self.rng.random() < 0.5:
+            return {'query': text, 'answer': pos, 'instruction': self.instruction}
+        else:
+            return {'query': pos, 'answer': text, 'instruction': "Please write a question based on this passage."}
 
     def __getitem__(self, idx):
         if self.data_name in PRETRAINING_PAIR_DATASETS and self.rng.random() < 0.5:

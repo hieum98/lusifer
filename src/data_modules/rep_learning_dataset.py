@@ -1,4 +1,5 @@
 import bisect
+import math
 import random
 from typing import Dict, Tuple
 import einops
@@ -28,16 +29,43 @@ class RepLearningDataset(Dataset):
         self.neg_per_sample = neg_per_sample
         self.pos_per_sample = pos_per_sample
         self.seed = seed
-        try:
-            data = datasets.load_dataset(data_name, split='train')
-        except:
-            data = datasets.load_dataset('json', data_files=data_path, split='train')
-        if len(data) > number_training_samples:
-            data = data.train_test_split(train_size=number_training_samples, seed=seed, shuffle=True)['train']
-        self.data = data
-
         self.rng = random.Random(self.seed)
-    
+
+        self.data = self.get_data(data_name, data_path, number_training_samples)
+
+    def get_data(self, data_name: str, data_path: str=None, number_data: int=1_000_000):
+        try:
+            dataset = datasets.load_dataset(data_name, split='train')
+        except:
+            dataset = datasets.load_dataset('json', data_files=data_path, split='train')
+        
+        if len(dataset) > number_data:
+            cluster = set(dataset['cluster'])
+            example_per_cluster = math.ceil(number_data / len(cluster))
+            cluster_with_id = dataset.map(lambda example, idx: {'id': idx, 'cluster': example['cluster']}, with_indices=True, num_proc=num_proc, remove_columns=dataset.column_names)
+            cluster_with_id = cluster_with_id.to_pandas()
+            # group by cluster
+            cluster_with_id = cluster_with_id.groupby('cluster')['id'].apply(list).reset_index()
+            cluster_with_id = cluster_with_id.to_dict(orient='records')
+
+            # get the examples
+            selected_index = []
+            for clus in cluster_with_id:
+                in_cluster_index = clus['id']
+                in_cluster_index = self.rng.sample(in_cluster_index, min(len(in_cluster_index), example_per_cluster))
+                selected_index.extend(in_cluster_index)
+            
+            if len(selected_index) < number_data:
+                all_data_index = list(range(len(dataset)))
+                self.rng.shuffle(all_data_index)
+                for idx in all_data_index:
+                    if idx not in selected_index:
+                        selected_index.append(idx)
+                    if len(selected_index) >= number_data:
+                        break
+            dataset = dataset.select(selected_index)    
+        return dataset
+
     def __len__(self):
         return len(self.data)
     

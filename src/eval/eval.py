@@ -10,6 +10,7 @@ import mteb
 from tqdm import tqdm
 
 from src.eval.constants import MTEB_DS_TO_PROMPT, QUICK_EVAL, LANG_TO_CODES, MULTILINGUAL_DS_TO_PROMPT
+from src.eval.wrapped_hf_model import WrappedHFModel
 from src.models.lusifer import WrappedLusifer
 
 
@@ -17,7 +18,7 @@ def eval_mteb_dataset(
         dataset_name: str,
         instruction: str,
         langs: List[str],
-        model: WrappedLusifer,
+        model: nn.Module,
         output_folder: str='results',
         batch_size: int=32,
         max_length: int=512,
@@ -73,7 +74,7 @@ def eval_mteb_dataset(
 
 
 def eval_mteb(
-        model: WrappedLusifer,
+        model: nn.Module,
         output_folder: str='results',
         batch_size: int=32,
         max_length: int=512,
@@ -117,7 +118,7 @@ def eval_mteb(
 
 
 def eval_multilingual(
-        model: WrappedLusifer,
+        model: nn.Module,
         langs: List[str] = 'all',
         output_folder: str='results',
         batch_size: int=32,
@@ -178,10 +179,7 @@ if __name__=='__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config_file", type=str, default=None, help="Path to the config file"
-    )
-    parser.add_argument(
-        "--checkpoint_path", type=str, default=None, help="Path to the model checkpoint"
+        "--model_name_or_path", type=str, required=True, help="Path to the model"
     )
     parser.add_argument(
         "--output_folder", type=str, default='results', help="Path to the output folder"
@@ -197,29 +195,16 @@ if __name__=='__main__':
     )
 
     args = parser.parse_args()
-    config_file = args.config_file
+    # config_file = args.config_file
 
-    hf_parser = HfArgumentParser((DataArguments, ModelArguments, TrainingArguments))
-    print(f"Loading yaml config {config_file}")
-    data_args, model_args, training_args = hf_parser.parse_yaml_file(yaml_file=config_file)
+    # hf_parser = HfArgumentParser((DataArguments, ModelArguments, TrainingArguments))
+    # print(f"Loading yaml config {config_file}")
+    # data_args, model_args, training_args = hf_parser.parse_yaml_file(yaml_file=config_file)
 
-    model = WrappedLusifer(
-        universal_learner_name_or_path=model_args.universal_learner_name_or_path,
-        encoder_name_or_path=model_args.encoder_name_or_path,
-        universal_learner_backbone_type=model_args.universal_learner_backbone_type,
-        encoder_backbone_type=model_args.encoder_backbone_type,
-        is_freeze_universal_learner=model_args.is_freeze_universal_learner,
-        is_freeze_encoder=True if training_args.is_alignment else False,
-        connection_type=model_args.connection_type,
-        num_added_tokens=model_args.num_added_tokens,
-        encoder_lora_name=model_args.encoder_lora_name,
-        universal_learner_lora_name=model_args.universal_learner_lora_name,
-        loar_r=model_args.loar_r,
-        lora_alpha=model_args.lora_alpha,
-        dropout=model_args.dropout,
-        attn_implementation=model_args.attn_implementation,
-        model_checkpoint=args.checkpoint_path,
-        )
+    model = WrappedHFModel(
+        model_name_or_path=args.model_name_or_path,
+        num_gpus=8,
+    )
     batch_size = args.batch_size * model.num_gpus if model.num_gpus > 0 else args.batch_size
     results = eval_mteb(
         model=model,
@@ -230,6 +215,7 @@ if __name__=='__main__':
     )
     multilingual_results = eval_multilingual(
         model=model,
+        langs=['en', 'ru', 'vi', 'zh'],
         output_folder=args.output_folder,
         batch_size=batch_size,
         max_length=args.max_length,
