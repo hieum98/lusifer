@@ -47,7 +47,7 @@ class AlignmentTrainer:
         self,
         model: Lusifer,
         train_loader: DataLoader,
-        stage: Dict[str, Any],
+        state: Dict[str, Any],
         lr_max_steps: int = 1000,
         grad_norm_clip: float = None,
         log_interval: int = 1,
@@ -57,10 +57,10 @@ class AlignmentTrainer:
         model_revision: Optional[str] = 'v0.1',
         eval_batch_size: Optional[int] = 32,
     ):
-        optimizer: torch.optim.Optimizer = stage["optimizer"]
-        scheduler : torch.optim.lr_scheduler.LambdaLR = stage.get("scheduler", None)
-        current_step = stage.get("current_step", 0) # checkpoint iteration number
-        epoch_num = stage.get("epoch_num", 0) # checkpoint epoch number
+        optimizer: torch.optim.Optimizer = state["optimizer"]
+        scheduler : torch.optim.lr_scheduler.LambdaLR = state.get("scheduler", None)
+        current_step = state.get("current_step", 0) # checkpoint iteration number
+        epoch_num = state.get("epoch_num", 0) # checkpoint epoch number
         self.fabric.print(f"Starting epoch {epoch_num} with {len(train_loader)} iterations")
         model.train()
 
@@ -118,7 +118,7 @@ class AlignmentTrainer:
             if current_step % checkpoint_iterval == 0 or current_step == lr_max_steps * self.num_accumulation_steps or batch_idx == len(train_loader) - 1:
                 checkpoint_path = pathlib.Path(checkpoint_dir) / "lastest.ckpt"
                 checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-                stage = {
+                state = {
                     "model": model,
                     "optimizer": optimizer,
                     "scheduler": scheduler,
@@ -126,15 +126,15 @@ class AlignmentTrainer:
                     "epoch_num": epoch_num if batch_idx < len(train_loader)-1 else epoch_num + 1,
                 }
                 if checkpoint_filter is not None:
-                    self.fabric.save(checkpoint_path, stage, filter={'model': checkpoint_filter})
+                    self.fabric.save(checkpoint_path, state, filter={'model': checkpoint_filter})
                 else:
-                    self.fabric.save(checkpoint_path, stage)
+                    self.fabric.save(checkpoint_path, state)
                 self.fabric.print(f"Checkpoint saved at {checkpoint_path}")
                 torch.cuda.empty_cache()
-                self.fabric.load(checkpoint_path, stage, strict=False)
-                model = stage.pop("model")
-                optimizer = stage.pop("optimizer")
-                scheduler = stage.pop("scheduler")
+                self.fabric.load(checkpoint_path, state, strict=False)
+                model = state.pop("model")
+                optimizer = state.pop("optimizer")
+                scheduler = state.pop("scheduler")
                 self.fabric.barrier()
                 model_hprams = model.hprams
 

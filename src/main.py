@@ -129,19 +129,24 @@ def main(
     )
 
     # Load the checkpoint if needed
-    stage = {
-        "model": model,
+    state = {
         "optimizer": optimizer,
         "scheduler": scheduler,
         "current_step": 0,
         "epoch_num": 0,
     }
     if training_args.checkpoint_file is not None:
-        checkpoint_path = os.path.join(training_args.checkpoint_dir, training_args.checkpoint_file)
+        checkpoint_path = training_args.checkpoint_file
         if os.path.exists(checkpoint_path):
             fabric.print(f"Load checkpoint from {checkpoint_path}")
-            fabric.load(checkpoint_path, stage, strict=False)
-    model = stage.pop("model")
+            if training_args.only_load_model:
+                model_state = {'model': model}
+                fabric.load(checkpoint_path, model_state, strict=False)
+                model = model_state.pop("model")
+            else:
+                state['model'] = model
+                fabric.load(checkpoint_path, state, strict=False)
+                model = state.pop("model")
 
     # Initialize the trainer
     if is_alignmnent:
@@ -159,7 +164,7 @@ def main(
             chunk_size=training_args.gc_chunk_size,
         )
 
-    current_epoch_num = stage.get("epoch_num", 0)
+    current_epoch_num = state.get("epoch_num", 0)
     fabric.print(f"Start training from epoch {current_epoch_num}")
     for epoch in range(current_epoch_num, training_args.max_epochs):
         if is_alignmnent:
@@ -187,7 +192,7 @@ def main(
         checkpoint_path = trainer.fit_epoch(
             model=model,
             train_loader=train_dataloader,
-            stage=stage,
+            state=state,
             lr_max_steps=lr_max_steps,
             grad_norm_clip=training_args.grad_norm_clip,
             log_interval=training_args.log_interval,
@@ -200,10 +205,10 @@ def main(
         fabric.barrier()
         # Reload the model from the checkpoint 
         torch.cuda.empty_cache()
-        stage['model'] = model
-        fabric.load(checkpoint_path, stage, strict=False)
-        model = stage.pop("model")
-        if stage["current_step"] > lr_max_steps * num_accumulation_steps:
+        state['model'] = model
+        fabric.load(checkpoint_path, state, strict=False)
+        model = state.pop("model")
+        if state["current_step"] > lr_max_steps * num_accumulation_steps:
             break
     
     fabric.print("Training is finished")
@@ -332,6 +337,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--checkpoint_file", type=str, default=None, help="Checkpoint file to resume training"
     )
+    parser.add_argument(
+        "--only_load_model", action="store_true", help="Only load the model from the checkpoint"
+    )
 
     args = parser.parse_args()
     config_file = args.config_file
@@ -349,6 +357,7 @@ if __name__ == "__main__":
     training_args.min_learning_rate = args.min_learning_rate if args.min_learning_rate is not None else training_args.min_learning_rate
     training_args.checkpoint_dir = args.checkpoint_dir if args.checkpoint_dir is not None else training_args.checkpoint_dir
     training_args.checkpoint_file = args.checkpoint_file
+    training_args.only_load_model = args.only_load_model
 
     config_file_path = Path(training_args.checkpoint_dir) / "config.yaml"
     config_file_path.parent.mkdir(parents=True, exist_ok=True)

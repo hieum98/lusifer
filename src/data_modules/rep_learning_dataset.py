@@ -1,5 +1,6 @@
 import bisect
 import math
+import os
 import random
 from typing import Dict, Tuple
 import einops
@@ -39,10 +40,16 @@ class RepLearningDataset(Dataset):
         except:
             dataset = datasets.load_dataset('json', data_files=data_path, split='train')
         
+        max_num_worker_suggest = 1
+        try:
+            max_num_worker_suggest = len(os.sched_getaffinity(0))
+        except Exception:
+            pass
+        
         if len(dataset) > number_data:
             cluster = set(dataset['cluster'])
             example_per_cluster = math.ceil(number_data / len(cluster))
-            cluster_with_id = dataset.map(lambda example, idx: {'id': idx, 'cluster': example['cluster']}, with_indices=True, num_proc=num_proc, remove_columns=dataset.column_names)
+            cluster_with_id = dataset.map(lambda example, idx: {'id': idx, 'cluster': example['cluster']}, with_indices=True, num_proc=max_num_worker_suggest, remove_columns=dataset.column_names)
             cluster_with_id = cluster_with_id.to_pandas()
             # group by cluster
             cluster_with_id = cluster_with_id.groupby('cluster')['id'].apply(list).reset_index()

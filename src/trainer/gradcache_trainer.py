@@ -217,19 +217,19 @@ class GradCacheTrainer:
             self,
             model: Lusifer,
             model_inputs: Dict[str, torch.Tensor],
-            stage: RandContext, 
+            state: RandContext, 
             cache: torch.Tensor, # (batch_size, 1 + num_pos + num_neg, embed_dim)
             ):
         """
         Forward and backward pass through the model.
         :param model: model to forward pass through
         :param model_inputs: inputs to the model
-        :param stage: random states
+        :param state: random states
         :param query_cache: query gradient cache
         :param pos_cache: positive gradient cache
         :param neg_cache: negative gradient cache
         """
-        with stage:
+        with state:
             query_input_ids = model_inputs['query_input_ids']
             query_attention_mask = model_inputs['query_attention_mask']
             query_prompt_length = model_inputs['query_prompt_length']
@@ -295,7 +295,7 @@ class GradCacheTrainer:
         splitted_inputs = split_input(batch, self.chunk_size)
 
         # Forward pass for each chunk
-        rnd_stage = []
+        rnd_states = []
         all_query_projections = []
         all_pos_projections = []
         all_neg_projections = []
@@ -304,7 +304,7 @@ class GradCacheTrainer:
             all_query_projections.append(query_projections)
             all_pos_projections.append(pos_projections)
             all_neg_projections.append(neg_projections)
-            rnd_stage.append(rnd_state)
+            rnd_states.append(rnd_state)
         all_query_projections = torch.cat(all_query_projections, dim=0)
         all_pos_projections = torch.cat(all_pos_projections, dim=0)
         all_neg_projections = torch.cat(all_neg_projections, dim=0)
@@ -322,12 +322,12 @@ class GradCacheTrainer:
 
         # Forward and backward pass for each chunk
         accumulated_flags = [True for _ in range(len(splitted_inputs)-1)] + [False]
-        for chunk, c, stage, flag in zip(splitted_inputs, cache, rnd_stage, accumulated_flags):
+        for chunk, c, state, flag in zip(splitted_inputs, cache, rnd_states, accumulated_flags):
             with self.fabric.no_backward_sync(model, enabled=flag):
                 self.forward_backward(
                     model=model,
                     model_inputs=chunk,
-                    stage=stage,
+                    state=state,
                     cache=c,
                 )
         return con_loss
@@ -336,7 +336,7 @@ class GradCacheTrainer:
             self,
             model: Lusifer,
             train_loader: DataLoader,
-            stage: Dict[str, Any],
+            state: Dict[str, Any],
             lr_max_steps: int = 1000,
             grad_norm_clip: float = None,
             log_interval: int = 1,
@@ -349,10 +349,10 @@ class GradCacheTrainer:
         """
         Fit epoch for gradient cache training.
         """
-        optimizer: torch.optim.Optimizer = stage["optimizer"]
-        scheduler : torch.optim.lr_scheduler.LambdaLR = stage.get("scheduler", None)
-        current_step = stage.get("current_step", 0) # checkpoint iteration number
-        epoch_num = stage.get("epoch_num", 0) # checkpoint epoch number
+        optimizer: torch.optim.Optimizer = state["optimizer"]
+        scheduler : torch.optim.lr_scheduler.LambdaLR = state.get("scheduler", None)
+        current_step = state.get("current_step", 0) # checkpoint iteration number
+        epoch_num = state.get("epoch_num", 0) # checkpoint epoch number
         self.fabric.print(f"Starting epoch {epoch_num} with {len(train_loader)} iterations")
         model.train()
 
@@ -401,7 +401,7 @@ class GradCacheTrainer:
             if current_step % checkpoint_iterval == 0 or current_step == lr_max_steps or batch_idx + 1 == len(train_loader):
                 checkpoint_path = pathlib.Path(checkpoint_dir) / "lastest.ckpt"
                 checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-                stage = {
+                state = {
                     "model": model,
                     "optimizer": optimizer,
                     "scheduler": scheduler,
@@ -409,15 +409,15 @@ class GradCacheTrainer:
                     "epoch_num": epoch_num if batch_idx < len(train_loader)-1 else epoch_num + 1,
                 }
                 if checkpoint_filter is not None:
-                    self.fabric.save(checkpoint_path, stage, filter={'model': checkpoint_filter})
+                    self.fabric.save(checkpoint_path, state, filter={'model': checkpoint_filter})
                 else:
-                    self.fabric.save(checkpoint_path, stage)
+                    self.fabric.save(checkpoint_path, state)
                 self.fabric.print(f"Checkpoint saved at {checkpoint_path}")
                 torch.cuda.empty_cache()
-                self.fabric.load(checkpoint_path, stage, strict=False)
-                model = stage.pop("model")
-                optimizer = stage.pop("optimizer")
-                scheduler = stage.pop("scheduler")
+                self.fabric.load(checkpoint_path, state, strict=False)
+                model = state.pop("model")
+                optimizer = state.pop("optimizer")
+                scheduler = state.pop("scheduler")
                 self.fabric.barrier()
                 model_hprams = model.hprams
 
@@ -466,3 +466,6 @@ class GradCacheTrainer:
                         self.fabric.print(f"Best multi checkpoint saved at {best_checkpoint_path}")
                 self.fabric.barrier()
         return checkpoint_path
+    
+
+    
