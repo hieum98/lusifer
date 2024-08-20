@@ -28,7 +28,7 @@ attn_implementation: 'flash_attention_2'
 # Training args
 is_alignment: false
 seed: 777
-model_revision: 't5-mistral.v0.1'
+model_revision: 'xlm-mistral.v0.1'
 # Training strategy args
 precision: 'bf16-mixed'
 strategy: 'fsdp'
@@ -44,7 +44,7 @@ is_distance: True
 # Optimization args
 global_batch_size: 64
 eval_batch_size: 128
-max_epochs: 1
+max_epochs: 2
 max_steps: 100000
 weight_decay: 0.0
 warmpup_proportion: 0.1
