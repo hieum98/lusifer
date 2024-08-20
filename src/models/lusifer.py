@@ -336,12 +336,13 @@ class Lusifer(nn.Module):
         universal_representation = self.connection_module(universal_representation, attention_mask=attention_mask)
 
         if is_encoding:
-            encoder_representation = self.encoder.model(
+            encoder_representation = self.encoder(
                 inputs_embeds=universal_representation,
                 attention_mask=attention_mask,
                 return_dict=True,
                 is_causal=False,
-            ).last_hidden_state # (batch_size, seq_len, hidden_size)
+                output_hidden_states=True
+            ).hidden_states[-1] # (batch_size, seq_len, hidden_size)
 
             sentence_representation = self.pooling(
                 hidden_state=encoder_representation,
