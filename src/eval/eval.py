@@ -3,6 +3,7 @@ import json
 from functools import partial
 from pathlib import Path
 from typing import List, Union
+import datasets.config
 import numpy as np
 import torch
 import torch.nn as nn
@@ -12,6 +13,8 @@ from tqdm import tqdm
 from src.eval.constants import MTEB_DS_TO_PROMPT, QUICK_EVAL, LANG_TO_CODES, MULTILINGUAL_DS_TO_PROMPT
 from src.eval.wrapped_hf_model import WrappedHFModel
 from src.models.lusifer import WrappedLusifer
+
+datasets.config.HF_DATASETS_TRUST_REMOTE_CODE = True
 
 
 def eval_mteb_dataset(
@@ -173,7 +176,6 @@ def eval_multilingual(
 if __name__=='__main__':
     os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
     os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-    os.environ['HF_DATASETS_TRUST_REMOTE_CODE']='1'
     
     import argparse
     from transformers import HfArgumentParser
@@ -208,13 +210,13 @@ if __name__=='__main__':
         num_gpus=8,
     )
     batch_size = args.batch_size * model.num_gpus if model.num_gpus > 0 else args.batch_size
-    results = eval_mteb(
-        model=model,
-        output_folder=args.output_folder,
-        batch_size=batch_size,
-        max_length=args.max_length,
-        is_quick_run=args.is_quick_run,
-    )
+    # results = eval_mteb(
+    #     model=model,
+    #     output_folder=args.output_folder,
+    #     batch_size=batch_size,
+    #     max_length=args.max_length,
+    #     is_quick_run=args.is_quick_run,
+    # )
     multilingual_results = eval_multilingual(
         model=model,
         output_folder=args.output_folder,
