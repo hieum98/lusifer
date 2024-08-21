@@ -210,13 +210,13 @@ if __name__=='__main__':
         num_gpus=8,
     )
     batch_size = args.batch_size * model.num_gpus if model.num_gpus > 0 else args.batch_size
-    # results = eval_mteb(
-    #     model=model,
-    #     output_folder=args.output_folder,
-    #     batch_size=batch_size,
-    #     max_length=args.max_length,
-    #     is_quick_run=args.is_quick_run,
-    # )
+    results = eval_mteb(
+        model=model,
+        output_folder=args.output_folder,
+        batch_size=batch_size,
+        max_length=args.max_length,
+        is_quick_run=args.is_quick_run,
+    )
     multilingual_results = eval_multilingual(
         model=model,
         output_folder=args.output_folder,
