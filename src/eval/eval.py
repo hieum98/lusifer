@@ -34,6 +34,8 @@ def eval_mteb_dataset(
         eval_splits = ['validation']
     elif 'dev' in task.metadata.eval_splits:
         eval_splits = ['dev']
+    elif 'train' in task.metadata.eval_splits:
+        eval_splits = ['train']
     else:
         raise ValueError(f"Could not find any of the evaluation splits in the task {task_name}")
 
@@ -215,7 +217,6 @@ if __name__=='__main__':
     )
     multilingual_results = eval_multilingual(
         model=model,
-        langs=['en', 'ru', 'vi', 'zh'],
         output_folder=args.output_folder,
         batch_size=batch_size,
         max_length=args.max_length,
