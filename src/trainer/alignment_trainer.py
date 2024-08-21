@@ -136,12 +136,15 @@ class AlignmentTrainer:
                 optimizer = state.pop("optimizer")
                 scheduler = state.pop("scheduler")
                 self.fabric.barrier()
-                model_hprams = model.hprams
 
                 # Evaluate model
                 if self.fabric.global_rank == 0:
+                    model_hprams = model.hprams
                     self.fabric.print("Evaluating model")
                     _model_revision = f"{model_revision}_step-{current_step}_epoch-{epoch_num}"
+                    self.fabric.print(f"Model hprams: {model_hprams}")
+                    self.fabric.print(f"Model revision: {_model_revision}")
+                    self.fabric.print(f"Loading model from checkpoint: {checkpoint_path}")
                     eval_model = WrappedLusifer(
                         model_revision=_model_revision, 
                         model_checkpoint=checkpoint_path,
