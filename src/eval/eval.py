@@ -33,6 +33,10 @@ def eval_mteb_dataset(
 
     if 'test' in task.metadata.eval_splits:
         eval_splits = ['test']
+    elif 'test.full' in task.metadata.eval_splits:
+        eval_splits = ['test.full']
+    elif 'test_expert' in task.metadata.eval_splits:
+        eval_splits = ['test_expert']
     elif 'validation' in task.metadata.eval_splits:
         eval_splits = ['validation']
     elif 'dev' in task.metadata.eval_splits:
