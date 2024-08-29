@@ -431,25 +431,24 @@ MULTILINGUAL_DS_TO_PROMPT = {
 }
 
 LANG_TO_CODES = {
-    'ar': ['ara'],
-    'bn': ['ben'],
-    'de': ['deu'],
-    'es': ['spa'],
-    'en': ['eng'],
-    'fa': ['fas'],
-    'fi': ['fin'],
-    'fr': ['fra'],
-    'hi': ['hin'],
-    'id': ['ind'],
-    'ja': ['jpn'],
-    'ko': ['kor'],
-    'ru': ['rus'],
-    'sw': ['swa'],
-    'te': ['tel'],
-    'th': ['tha'],
-    'vi': ['vie'],
-    'yo': ['yor'],
-    'zh': ['cmn', 'cmo', 'zho'],
+    'ar': ['ara'], # Medium-resource language
+    'bn': ['ben'], # Low-resource language
+    'de': ['deu'], # High-resource language
+    'es': ['spa'], # High-resource language
+    'en': ['eng'], # High-resource language
+    'fa': ['fas'], # Medium-resource language
+    'fi': ['fin'], # Medium-resource language
+    'fr': ['fra'], # High-resource language
+    'hi': ['hin'], # Medium-resource language
+    'id': ['ind'], # Medium-resource language
+    'ja': ['jpn'], # High-resource language
+    'ko': ['kor'], # Medium-resource language
+    'ru': ['rus'], # High-resource language
+    'sw': ['swa'], # Extremely low-resource language
+    'te': ['tel'], # Low-resource language
+    'vi': ['vie'], # High-resource language
+    'yo': ['yor'], # Extremely low-resource language
+    'zh': ['cmn', 'cmo', 'zho'], # High-resource language
 }
 
 QUICK_EVAL = [
