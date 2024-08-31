@@ -284,7 +284,6 @@ MULTILINGUAL_DS_TO_PROMPT = {
         "MassiveIntentClassification": "Given a user utterance as query, find the user intents.",
         "MassiveScenarioClassification": "Given a user utterance as query, find the user scenarios.",
         "KLUE-TC": "Identify the category of the following passages.",
-        "KorFin": "Classify the sentiment expressed in the given text as positive, negative or neutral.",
         "KorSarcasmClassification": "Classify the given text into one of the following categories: sarcasm or not sarcasm.",
         "SIB200Classification": "Identify the category of the following passages.",
         "SIB200ClusteringS2S": "Identify the category of the following passages.",
