@@ -4,6 +4,7 @@ from functools import partial
 from pathlib import Path
 from typing import List, Union
 import datasets.config
+from datasets import disable_caching
 import numpy as np
 import torch
 import torch.nn as nn
@@ -180,6 +181,7 @@ def eval_multilingual(
 if __name__=='__main__':
     os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
     os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+    disable_caching()
     
     import argparse
     from transformers import HfArgumentParser
