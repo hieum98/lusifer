@@ -404,7 +404,6 @@ MULTILINGUAL_DS_TO_PROMPT = {
         "CLSClusteringS2S": "Identify the category of the following passages.",
         "ThuNewsClusteringP2P": "Identify the category of the following passages.",
         "ThuNewsClusteringS2S": "Identify the category of the following passages.",
-        "Cmnli": 'Given a premise, retrieve a hypothesis that is entailed by the premise.',
         "Ocnli": 'Given a premise, retrieve a hypothesis that is entailed by the premise.',
         "PawsXPairClassification": "Retrieve semantically similar text.",
         "MMarcoReranking": "Given a question, retrieve passages that answer the question.",
