@@ -422,7 +422,6 @@ MULTILINGUAL_DS_TO_PROMPT = {
         "BQ": "Retrieve semantically similar text.",
         "LCQMC": "Retrieve semantically similar text.",
         "PAWSX": "Retrieve semantically similar text.",
-        "QBQTC": "Retrieve semantically similar text.",
         "STSB": "Retrieve semantically similar text.",
         'STS22': "Retrieve semantically similar text.",
     },
