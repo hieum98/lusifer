@@ -50,7 +50,7 @@ class AlignmentDataset(PretrainingDataset):
         if self.data_name in PRETRAINING_PASSAGE2QUERY:
             query = example['query']
             pos = self.rng.choice(example['positive'])
-            if self.rng.random() < 0.2:
+            if self.rng.random() < 0.3:
                 return {'query': query, 'answer': pos, 'instruction': DATA[self.data_name]['instruction']}
             elif self.rng.random() < 0.4:
                 return {'query': pos, 'instruction': "Please reconstruct the following text."}
