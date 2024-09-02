@@ -49,7 +49,7 @@ class RepLearningDataset(Dataset):
         if len(dataset) > number_data:
             cluster = set(dataset['cluster'])
             example_per_cluster = math.ceil(number_data / len(cluster))
-            cluster_with_id = dataset.map(lambda example, idx: {'id': idx, 'cluster': example['cluster']}, with_indices=True, num_proc=max_num_worker_suggest, remove_columns=dataset.column_names)
+            cluster_with_id = dataset.map(lambda example, idx: {'id': idx, 'cluster': example['cluster']}, with_indices=True, num_proc=max_num_worker_suggest, remove_columns=dataset.column_names, load_from_cache_file=False)
             cluster_with_id = cluster_with_id.to_pandas()
             # group by cluster
             cluster_with_id = cluster_with_id.groupby('cluster')['id'].apply(list).reset_index()

@@ -27,7 +27,7 @@ from src.models.bidirectional_modelings.modeling_bidirectional_qwen2 import Bidi
 from src.models.bidirectional_modelings.modeling_bidirectional_cohere import BidirectionalCohereForCausalLM
 from src.models.bidirectional_modelings.modeling_bidirectional_gemma import BidirectionalGemmaForCausalLM
 from src.models.bidirectional_modelings.modeling_bidirectional_gemma2 import BidirectionalGemma2ForCausalLM
-from src.models.connection_modules import FFWithAddedTokens, AttentionPooling
+from src.models.connection_modules import FFWithAddedTokens
 from src.special_tokens import SPECIAL_TOKENS
 from src.models.utils import find_all_linear_names
 
@@ -128,13 +128,6 @@ class Lusifer(nn.Module):
                 num_added_tokens=self.num_added_tokens,
                 model_dtype=model_dtype,
             )
-        elif connection_type == 'attn':
-            self.connection_module = AttentionPooling(
-                in_dim=self.universal_learner_dim,
-                out_dim=self.encoder_dim,
-                num_query_tokens=self.num_added_tokens,
-                model_dtype=model_dtype,
-            )
         else:
             raise NotImplementedError(f"Connection type {connection_type} not implemented")
 
@@ -171,7 +164,8 @@ class Lusifer(nn.Module):
             quantization: bool = False,
             attn_implementation: str = None,
             model_dtype: torch.dtype = torch.bfloat16,
-    ):
+    ):  
+        print(f"Loading model from {model_name_or_path}")
         if use_lora:
             config = AutoConfig.from_pretrained(
                 model_name_or_path,
@@ -261,7 +255,7 @@ class Lusifer(nn.Module):
     def pooling(
             self,
             hidden_state: torch.Tensor,
-            attention_mask: torch.Tensor = None,
+            attention_mask: Optional[torch.Tensor] = None,
             prompt_length: Optional[torch.Tensor] = None,
     ):  
         if attention_mask is None:
@@ -315,7 +309,7 @@ class Lusifer(nn.Module):
                 torch.ones((attention_mask.size(0), self.num_added_tokens), device=attention_mask.device, dtype=attention_mask.dtype)
                 ], dim=1)
         else:
-            attention_mask = torch.ones((attention_mask.size(0), self.num_added_tokens), device=attention_mask.device, dtype=attention_mask.dtype)
+            raise NotImplementedError(f"Connection type {self.connection_type} not implemented")
         return attention_mask
 
     def forward(
@@ -334,6 +328,7 @@ class Lusifer(nn.Module):
             return_dict=True
         ).hidden_states[-1] # (batch_size, seq_len, hidden_size)
         universal_representation = self.connection_module(universal_representation, attention_mask=attention_mask)
+        attention_mask = self.construct_input_attn_mask(attention_mask)
 
         if is_encoding:
             encoder_representation = self.encoder(
@@ -343,12 +338,14 @@ class Lusifer(nn.Module):
                 is_causal=False,
                 output_hidden_states=True
             ).hidden_states[-1] # (batch_size, seq_len, hidden_size)
-
-            sentence_representation = self.pooling(
-                hidden_state=encoder_representation,
-                attention_mask=attention_mask,
-                prompt_length=prompt_length,
-            ) # (batch_size, hidden_size)
+            if self.connection_type == 'ff':
+                sentence_representation = self.pooling(
+                    hidden_state=encoder_representation,
+                    attention_mask=attention_mask,
+                    prompt_length=prompt_length,
+                ) # (batch_size, hidden_size)
+            else:
+                raise NotImplementedError(f"Connection type {self.connection_type} not implemented")
 
             projected_representation = self.output_projection(sentence_representation) # (batch_size, hidden_size)
             return {'reps': sentence_representation, 'projection': projected_representation}
@@ -360,20 +357,26 @@ class Lusifer(nn.Module):
                 embeddings = torch.cat(
                     [embeddings[:, :1], universal_representation, embeddings[:, 1:]], dim=1
                 ) # (batch_size, seq_len, hidden_size)
-                attention_mask = self.construct_input_attn_mask(attention_mask)
                 assert attention_mask.size(1) == universal_representation.size(1), f"Attn mask size should match with universal representation size. Got {attention_mask.size()} and {universal_representation.size()}"
+                # ARR Masking
                 attn_mask = torch.cat(
                     [llm_attention_mask[:, :1], attention_mask, llm_attention_mask[:, 1:]], dim=1
                 ) # (batch_size, seq_len)
+                # # Full Masking
+                # attn_mask = torch.cat(
+                #     [llm_attention_mask[:, :1], attention_mask, torch.zeros_like(llm_attention_mask[:, 1:])], dim=1
+                # )
                 universal_labels = torch.zeros((universal_representation.size(0), universal_representation.size(1)), device=universal_representation.device, dtype=input_ids.dtype) + -100
                 labels = torch.cat(
                     [llm_input_ids[:, :1], universal_labels, llm_input_ids[:, 1:]], dim=1
                 )
             else:
                 embeddings = torch.cat([universal_representation, embeddings], dim=1)
-                attention_mask = self.construct_input_attn_mask(attention_mask)
                 assert attention_mask.size(1) == universal_representation.size(1), f"Attn mask size should match with universal representation size. Got {attention_mask.size()} and {universal_representation.size()}"
+                # ARR Masking
                 attn_mask = torch.cat([attention_mask, llm_attention_mask], dim=1)
+                # # Full Masking
+                # attn_mask = torch.cat([attention_mask, torch.zeros_like(llm_attention_mask)], dim=1)
                 universal_labels = torch.zeros((universal_representation.size(0), universal_representation.size(1)), device=universal_representation.device, dtype=input_ids.dtype) + -100
                 labels = torch.cat([universal_labels, llm_input_ids], dim=1)
             
@@ -441,7 +444,7 @@ class WrappedLusifer(nn.Module):
 
         if model_checkpoint is not None and os.path.exists(model_checkpoint):
             print(f"Loading model from checkpoint: {model_checkpoint}")
-            state_dict = torch.load(model_checkpoint, map_location='cpu')
+            state_dict = torch.load(model_checkpoint, map_location='cpu', weights_only=False)
             self.model.load_state_dict(state_dict['model'], strict=False)
 
         self.special_tokens = SPECIAL_TOKENS[universal_learner_backbone_type]

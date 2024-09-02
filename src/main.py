@@ -12,6 +12,7 @@ from lightning.fabric.strategies import FSDPStrategy, DDPStrategy
 from lightning import seed_everything
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from transformers.models.mistral.modeling_mistral import MistralDecoderLayer
+from transformers.models.qwen2.modeling_qwen2 import Qwen2DecoderLayer
 from transformers.models.mt5.modeling_mt5 import MT5Block
 from transformers.models.xlm_roberta.modeling_xlm_roberta import XLMRobertaLayer
 
@@ -219,6 +220,8 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
 
     if is_alignment:
         train_data = PretrainingDataModule(
+            is_reconstruct=data_args.is_reconstruct,
+            is_query_positive_alignment=data_args.is_query_positive_alignment,
             num_workers=data_args.num_workers,
             seed=training_args.seed
         )
@@ -356,7 +359,7 @@ if __name__ == "__main__":
     training_args.learning_rate = args.learning_rate if args.learning_rate is not None else training_args.learning_rate
     training_args.min_learning_rate = args.min_learning_rate if args.min_learning_rate is not None else training_args.min_learning_rate
     training_args.checkpoint_dir = args.checkpoint_dir if args.checkpoint_dir is not None else training_args.checkpoint_dir
-    training_args.checkpoint_file = args.checkpoint_file
+    training_args.checkpoint_file = args.checkpoint_file if args.checkpoint_file is not None else training_args.checkpoint_file
     training_args.only_load_model = args.only_load_model
 
     config_file_path = Path(training_args.checkpoint_dir) / "config.yaml"

@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizer, BatchEncoding
 import datasets
 
-from src.data_modules.constants import DATA, PRETRAINING_DATASETS, PRETRAINING_PAIR_DATASETS
+from src.data_modules.constants import DATA, PRETRAINING_RECONSTRUCT, PRETRAINING_PASSAGE2QUERY, PRETRAINING_QUERY2PASSAGE
 
 
 class PretrainingDataset(Dataset):
@@ -21,7 +21,6 @@ class PretrainingDataset(Dataset):
         self.data_name = data_name
         self.seed = seed
         self.rng = random.Random(self.seed)
-        self.instruction = DATA[data_name]['instruction']
 
         try:
             data = datasets.load_dataset(data_name, split='train')
@@ -38,25 +37,36 @@ class PretrainingDataset(Dataset):
 class AlignmentDataset(PretrainingDataset):
     def only_alignment(self, idx):
         example = self.data[idx]
-        if self.data_name in PRETRAINING_DATASETS:
+        if self.data_name in PRETRAINING_RECONSTRUCT:
             text = example['query']
         else:
             pos = self.rng.choice(example['positive'])
             text = f"{example['query']}. {pos}"
-        return {'query': text, 'instruction': ""} # instruction is empty string for reconstruction case
+        return {'query': text, 'instruction': "Please reconstruct the following text."} # instruction is empty string for reconstruction case
     
     def query_positive_alignment(self, idx):
         example = self.data[idx]
-        assert self.data_name in PRETRAINING_PAIR_DATASETS, f"Data name {self.data_name} not in {PRETRAINING_PAIR_DATASETS}"
-        text = example['query']
-        pos = self.rng.choice(example['positive'])
-        if self.rng.random() < 0.5:
-            return {'query': text, 'answer': pos, 'instruction': self.instruction}
+        assert self.data_name in PRETRAINING_PASSAGE2QUERY or self.data_name in PRETRAINING_QUERY2PASSAGE, f"Data name {self.data_name} is not in {PRETRAINING_PASSAGE2QUERY} or {PRETRAINING_QUERY2PASSAGE}"
+        if self.data_name in PRETRAINING_PASSAGE2QUERY:
+            query = example['query']
+            pos = self.rng.choice(example['positive'])
+            if self.rng.random() < 0.2:
+                return {'query': query, 'answer': pos, 'instruction': DATA[self.data_name]['instruction']}
+            elif self.rng.random() < 0.4:
+                return {'query': pos, 'instruction': "Please reconstruct the following text."}
+            else:
+                return {'query': pos, 'answer': query, 'instruction': "Please write a question based on this passage."}
         else:
-            return {'query': pos, 'answer': text, 'instruction': "Please write a question based on this passage."}
+            query = example['query']
+            pos = self.rng.choice(example['positive'])
+            if self.rng.random() < 0.1:
+                return {'query': query, 'instruction': "Please reconstruct the following text."}
+            else:
+                return {'query': query, 'answer': pos, 'instruction': DATA[self.data_name]['instruction']}
+                
 
     def __getitem__(self, idx):
-        if self.data_name in PRETRAINING_PAIR_DATASETS and self.rng.random() < 0.5:
+        if self.data_name not in PRETRAINING_RECONSTRUCT:
             return self.query_positive_alignment(idx)
         else:
             return self.only_alignment(idx)

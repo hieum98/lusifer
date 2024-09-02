@@ -324,15 +324,44 @@ DATA = {
     }
 }
 
-PRETRAINING_DATASETS = [
+PRETRAINING_RECONSTRUCT = [
     'Hieuman/wikitext-103-filtered', 
+    'Hieuman/Reddit-clustering', 
+    'Hieuman/StackExchange-clustering',
+    'Hieuman/biorxivS2S',
     'Hieuman/biorxivP2P', 
+    'Hieuman/ArxivS2S',
     'Hieuman/ArxivP2P', 
     'Hieuman/imdb'
 ]
 
-PRETRAINING_PAIR_DATASETS = [
-    'Hieuman/MSMarco', 'Hieuman/PubMedQA'
+PRETRAINING_PASSAGE2QUERY = [
+    'Hieuman/MSMarco', 
+    'Hieuman/PubMedQA',
+    'Hieuman/Arguana',
+    'Hieuman/Fever', 
+    'Hieuman/FiQA', 
+    'Hieuman/HotpotQA',
+    'Hieuman/NFCorpus', 
+    'Hieuman/NQ',
+    'Hieuman/SciFact', 
+    'Hieuman/TREC-COVID', 
+    'Hieuman/Touche2020',
+    'Hieuman/en_MIRACL', 
+    'Hieuman/en_MrTidy',
+    'Hieuman/PQA',
+    'Hieuman/SQuAD',
+]
+
+PRETRAINING_QUERY2PASSAGE = [
+    'Hieuman/Amazon-Counterfactual', 
+    'Hieuman/Amazon-Review',
+    'Hieuman/Banking77',
+    'Hieuman/Emotion',
+    'Hieuman/imdb',
+    'Hieuman/MTOP-Intent',
+    'Hieuman/Toxic-conversation',
+    'Hieuman/Tweet-Sentiment'
 ]
 
 EN_CROSS_BATCH = [

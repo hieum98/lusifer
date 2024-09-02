@@ -15,10 +15,19 @@ class PretrainingDataModule(L.LightningDataModule):
     def __init__(
             self, 
             num_workers: int = 4,
+            is_reconstruct: bool = True,
+            is_query_positive_alignment: bool = False,
             seed: int = 777
             ):
         super().__init__()
-        self.data_names = PRETRAINING_DATASETS + PRETRAINING_PAIR_DATASETS
+        assert is_reconstruct or is_query_positive_alignment, "At least one of is_reconstruct or is_query_positive_alignment must be True."
+        if is_reconstruct and is_query_positive_alignment:
+            self.data_names = PRETRAINING_RECONSTRUCT + PRETRAINING_PASSAGE2QUERY + PRETRAINING_QUERY2PASSAGE
+        elif is_reconstruct:
+            self.data_names = PRETRAINING_RECONSTRUCT
+        elif is_query_positive_alignment:
+            self.data_names = PRETRAINING_PASSAGE2QUERY + PRETRAINING_QUERY2PASSAGE
+        
         self.data_names.sort()
         self.num_workers = num_workers
         self.seed = seed

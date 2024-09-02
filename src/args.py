@@ -8,6 +8,14 @@ class DataArguments:
         default_factory=lambda: ['en'],
         metadata={"help": "The languages to use for training."}
     )
+    is_reconstruct: bool = field(
+        default=False,
+        metadata={"help": "Whether to use reconstruction data or not."}
+    )
+    is_query_positive_alignment: bool = field(
+        default=False,
+        metadata={"help": "Whether to use query positive alignment data or not."}
+    )
     use_retrieval_data_only: bool = field(
         default=False,
         metadata={"help": "Whether to use retrieval data only or not."}

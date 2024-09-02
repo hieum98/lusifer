@@ -1,7 +1,8 @@
 # Data args
 langs:
   - en
-use_retrieval_data_only: True
+is_reconstruct: false
+is_query_positive_alignment: true
 max_seq_length: 512
 number_training_samples: 500_000
 neg_per_sample: 32
@@ -17,7 +18,7 @@ is_freeze_universal_learner: false
 connection_type: ff
 num_added_tokens: 0
 # Lora args
-encoder_lora_name: null # When alignment training, we freeze the encoder
+encoder_lora_name: encoder_lora # When alignment training, we freeze the encoder
 universal_learner_lora_name: universal_learner_lora # Not configured, default is None
 loar_r: 16
 lora_alpha: 32
@@ -44,8 +45,8 @@ is_distance: True
 # Optimization args
 global_batch_size: 256
 eval_batch_size: 128
-max_epochs: 3
-max_steps: 100000
+max_epochs: 5
+max_steps: 10000
 weight_decay: 0.0
 warmpup_proportion: 0.1
 # grad_norm_clip: 1.0 # Not configured, default is None
