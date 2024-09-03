@@ -46,13 +46,13 @@ class WrappedHFModel(nn.Module):
             self.model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=True)
             self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
         
-        if self.tokenizer.pad_token_id is None:
-            print("Tokenizer does not have a pad token. We will use the bos token as pad token.")
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
-        
-        if self.tokenizer.padding_side != 'right':
-            self.tokenizer.padding_side = 'right'
+            if self.tokenizer.pad_token_id is None:
+                print("Tokenizer does not have a pad token. We will use the bos token as pad token.")
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+                self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
+            
+            if self.tokenizer.padding_side != 'right':
+                self.tokenizer.padding_side = 'right'
 
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.num_gpus = min(num_gpus, torch.cuda.device_count())
