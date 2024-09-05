@@ -43,7 +43,12 @@ class WrappedHFModel(nn.Module):
                 use_fp16=True
                 ) # Setting use_fp16 to True speeds up computation with a slight performance degradation
         else:
-            self.model = AutoModel.from_pretrained(model_name_or_path, trust_remote_code=True)
+            self.model = AutoModel.from_pretrained(
+                model_name_or_path, 
+                trust_remote_code=True, 
+                torch_dtype=torch.bfloat16,
+                attn_implementation='flash_attention_2'
+                )
             self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
         
             if self.tokenizer.pad_token_id is None:
