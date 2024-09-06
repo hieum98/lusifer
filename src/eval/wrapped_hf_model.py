@@ -168,7 +168,7 @@ class WrappedHFModel(nn.Module):
             for start_index in tqdm(range(0, len(sentences), batch_size), desc="Batches", disable=len(sentences)<256):
                 batch = sentences[start_index:start_index+batch_size]
                 embeddings = self.udever_encode(batch, is_query, max_length)
-                all_embeddings.append(embeddings.cpu().numpy())
+                all_embeddings.append(embeddings.cpu().float().numpy())
             all_embeddings = np.concatenate(all_embeddings, axis=0)
         elif self.model_name_or_path=='BAAI/bge-m3':
             all_embeddings = self.model.encode(sentences, batch_size=batch_size, max_length=max_length)['dense_vecs']
@@ -183,7 +183,7 @@ class WrappedHFModel(nn.Module):
                 batch_dict = {k: v.to(self.device) for k, v in batch_dict.items()}
                 outputs = self.model(**batch_dict)
                 embeddings = self.pooling(outputs.last_hidden_state, batch_dict['attention_mask'])
-                all_embeddings.append(embeddings.cpu().numpy())
+                all_embeddings.append(embeddings.cpu().float().numpy())
             all_embeddings = np.concatenate(all_embeddings, axis=0)
 
         if is_single_sentence:
