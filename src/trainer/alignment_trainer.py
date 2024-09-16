@@ -91,9 +91,9 @@ class AlignmentTrainer:
                 if grad_norm_clip is not None:
                     self.fabric.clip_gradients(model, optimizer, max_norm=grad_norm_clip)
                 optimizer.step()
-                optimizer.zero_grad()
                 if scheduler is not None:
                     scheduler.step()
+                optimizer.zero_grad()
 
             # Log metrics
             if current_step % log_interval == 0:
