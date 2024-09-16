@@ -70,7 +70,7 @@ class WrappedHFModel(nn.Module):
         self.num_gpus = min(num_gpus, torch.cuda.device_count())
         if self.model_name_or_path not in ['BAAI/bge-m3', 'BAAI/bge-multilingual-gemma2']:
             self.model.to(self.device)
-            if self.num_gpus > 1:
+            if self.num_gpus > 1 and self.model_name_or_path not in ['nvidia/NV-Embed-v2']:
                 self.model = nn.DataParallel(self.model)
             self.model.eval()
 
@@ -174,6 +174,14 @@ class WrappedHFModel(nn.Module):
             all_embeddings = self.model.encode(sentences, batch_size=batch_size, max_length=max_length)['dense_vecs']
         elif self.model_name_or_path=='BAAI/bge-multilingual-gemma2':
             all_embeddings = self.model.encode(sentences, batch_size=batch_size, max_length=max_length)
+        elif self.model_name_or_path=='nvidia/NV-Embed-v2':
+            all_embeddings = []
+            for start_index in tqdm(range(0, len(sentences), batch_size), desc="Batches", disable=len(sentences)<256):
+                batch = sentences[start_index:start_index+batch_size]
+                outputs = self.model.encode(batch, instruction=instruction, max_length=max_length)
+                embeddings = F.normalize(outputs, p=2, dim=1)
+                all_embeddings.append(embeddings.cpu().float().numpy())
+            all_embeddings = np.concatenate(all_embeddings, axis=0)
         else:
             all_embeddings = []
             for start_index in tqdm(range(0, len(sentences), batch_size), desc="Batches", disable=len(sentences)<256):
