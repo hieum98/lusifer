@@ -181,7 +181,6 @@ def eval_multilingual(
 if __name__=='__main__':
     os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
     os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-    disable_caching()
     
     import argparse
     from transformers import HfArgumentParser
@@ -190,6 +189,9 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--model_name_or_path", type=str, required=True, help="Path to the model"
+    )
+    parser.add_argument(
+        "--model_checkpoint", type=str, default=None, help="Path to the model checkpoint"
     )
     parser.add_argument(
         "--output_folder", type=str, default='results', help="Path to the output folder"
@@ -203,32 +205,99 @@ if __name__=='__main__':
     parser.add_argument(
         "--is_quick_run", action='store_true', help="Whether to run the quick evaluation",
     )
+    parser.add_argument(
+        "--langs", type=str, nargs='+', default='all', help="Languages to evaluate",
+    )
+    parser.add_argument(
+        "--dataname", type=str, default=None, help="Name of the dataset to evaluate",
+    )
 
     args = parser.parse_args()
-    # config_file = args.config_file
 
-    # hf_parser = HfArgumentParser((DataArguments, ModelArguments, TrainingArguments))
-    # print(f"Loading yaml config {config_file}")
-    # data_args, model_args, training_args = hf_parser.parse_yaml_file(yaml_file=config_file)
-
-    model = WrappedHFModel(
-        model_name_or_path=args.model_name_or_path,
-        num_gpus=8,
-    )
+    if args.model_checkpoint is not None:
+        config_file = args.model_name_or_path
+        model_checkpoint = args.model_checkpoint
+        hf_parser = HfArgumentParser((DataArguments, ModelArguments, TrainingArguments))
+        print(f"Loading yaml config {config_file}")
+        data_args, model_args, training_args = hf_parser.parse_yaml_file(yaml_file=config_file)
+        model = WrappedLusifer(
+            universal_learner_name_or_path=model_args.universal_learner_name_or_path,
+            encoder_name_or_path=model_args.encoder_name_or_path,
+            universal_learner_backbone_type=model_args.universal_learner_backbone_type,
+            encoder_backbone_type=model_args.encoder_backbone_type,
+            is_freeze_universal_learner=model_args.is_freeze_universal_learner,
+            is_freeze_encoder=True,
+            connection_type=model_args.connection_type,
+            num_added_tokens=model_args.num_added_tokens,
+            encoder_lora_name=model_args.encoder_lora_name,
+            universal_learner_lora_name=model_args.universal_learner_lora_name,
+            loar_r=model_args.loar_r,
+            lora_alpha=model_args.lora_alpha,
+            dropout=model_args.dropout,
+            attn_implementation=model_args.attn_implementation,
+            model_dtype= torch.bfloat16,
+            model_revision=training_args.model_revision,
+            model_checkpoint=model_checkpoint,
+        )
+    else:
+        model = WrappedHFModel(
+            model_name_or_path=args.model_name_or_path,
+            num_gpus=8,
+        )
     batch_size = args.batch_size * model.num_gpus if model.num_gpus > 0 else args.batch_size
-    results = eval_mteb(
-        model=model,
-        output_folder=args.output_folder,
-        batch_size=batch_size,
-        max_length=args.max_length,
-        is_quick_run=args.is_quick_run,
-    )
-    multilingual_results = eval_multilingual(
-        model=model,
-        output_folder=args.output_folder,
-        batch_size=batch_size,
-        max_length=args.max_length,
-        is_quick_run=args.is_quick_run
-    )
+
+    if args.dataname is None and (args.langs=='all' or 'all' in args.langs):
+        multilingual_results = eval_multilingual(
+            model=model,
+            output_folder=args.output_folder,
+            batch_size=batch_size,
+            max_length=args.max_length,
+            is_quick_run=args.is_quick_run
+        )
+        results = eval_mteb(
+            model=model,
+            output_folder=args.output_folder,
+            batch_size=batch_size,
+            max_length=args.max_length,
+            is_quick_run=args.is_quick_run,
+        )
+    elif args.langs=='all' or 'all' in args.langs:
+        multilingual_results = eval_multilingual(
+            model=model,
+            output_folder=args.output_folder,
+            batch_size=batch_size,
+            max_length=args.max_length,
+            is_quick_run=args.is_quick_run
+        )
+    else:
+        langs = args.langs
+        dataname = args.dataname
+        for lang in langs:
+            instruction = None
+            if lang=='en':
+                try:
+                    prompt_dicts = {}
+                    for task in MTEB_DS_TO_PROMPT.keys():
+                        prompt_dicts.update(MTEB_DS_TO_PROMPT[task])
+                    instruction = prompt_dicts[dataname]
+                except:
+                    instruction = MULTILINGUAL_DS_TO_PROMPT.get(lang, {}).get(dataname, None)
+            else:
+                instruction = MULTILINGUAL_DS_TO_PROMPT.get(lang, {}).get(dataname, None)
+            if instruction is None:
+                print(f"Could not find the instruction for {dataname} in {lang}")
+                continue
+            langs = LANG_TO_CODES[lang]
+            eval_mteb_dataset(
+                dataset_name=dataname,
+                instruction=instruction,
+                langs=langs,
+                model=model,
+                output_folder=f"{args.output_folder}/{langs[0]}",
+                batch_size=batch_size,
+                max_length=args.max_length
+            )
+
+        
             
         
