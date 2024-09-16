@@ -15,6 +15,10 @@ DATA = {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/fever_hard_negatives.jsonl',
         'instruction': "Given a claim, retrieve documents that support or refute the claim.",
     },
+    'Hieuman/Fever-reduced': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/beir/fever_hard_negatives.jsonl',
+        'instruction': "Given a claim, retrieve documents that support or refute the claim.",
+    },
     'Hieuman/FiQA': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/fiqa_hard_negatives.jsonl',
         'instruction': "Given a question, retrieve passages that answer the question.",
@@ -23,11 +27,15 @@ DATA = {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/hotpotqa_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
+    'Hieuman/HotpotQA-reduced': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/beir/hotpotqa_hard_negatives.jsonl',
+        'instruction': 'Given a question, retrieve passages that answer the question.'
+    },
     'Hieuman/MSMarco': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/msmarco_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
-    'Hieuman/MSMarco': {
+    'Hieuman/MSMarco-reduced': {
         'data_path': '/home/hieum/uonlp/lusifer/data/beir/msmarco_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
@@ -73,12 +81,22 @@ DATA = {
         'instruction': 'Classify the given Amazon review into one of five rating categories: Poor, Fair, Good, Very good, Excellent.',
         'enable_cross_batch_negative_sampling': False
     },
+    'Hieuman/Amazon-Review-reduced': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/amazon_review_hard_negatives.jsonl',
+        'instruction': 'Classify the given Amazon review into one of five rating categories: Poor, Fair, Good, Very good, Excellent.',
+        'enable_cross_batch_negative_sampling': False
+    },
     'Hieuman/ArxivP2P': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/arxivP2P_hard_negatives.jsonl',
         'instruction': 'Identify the category of the following passages.',
         'enable_cross_batch_negative_sampling': False
     },
     'Hieuman/ArxivS2S': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/arxivS2S_hard_negatives.jsonl',
+        'instruction': 'Identify the category of the following passages.',
+        'enable_cross_batch_negative_sampling': False
+    },
+    'Hieuman/ArxivS2S-reduced': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/arxivS2S_hard_negatives.jsonl',
         'instruction': 'Identify the category of the following passages.',
         'enable_cross_batch_negative_sampling': False
@@ -108,7 +126,7 @@ DATA = {
         'instruction': 'Classify the sentiment expressed in the given text as positive or negative.',
         'enable_cross_batch_negative_sampling': False
     },
-    'Hieuman/imdb': {
+    'Hieuman/imdb-reduced': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/imdb_hard_negatives.jsonl',
         'instruction': 'Classify the sentiment expressed in the given text as positive or negative.',
         'enable_cross_batch_negative_sampling': False
@@ -140,7 +158,15 @@ DATA = {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/pqa_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
+    'Hieuman/PQA-reduced': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/pqa_hard_negatives.jsonl',
+        'instruction': 'Given a question, retrieve passages that answer the question.'
+    },
     'Hieuman/PubMedQA': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/pubmedqa_hard_negatives.jsonl',
+        'instruction': 'Given a question, retrieve passages that answer the question.'
+    },
+    'Hieuman/PubMedQA-reduced': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/pubmedqa_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
@@ -157,7 +183,15 @@ DATA = {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/snli_hard_negatives.jsonl',
         'instruction': 'Given a premise, retrieve a hypothesis that is entailed by the premise.'
     },
+    'Hieuman/snli-reduced': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/snli_hard_negatives.jsonl',
+        'instruction': 'Given a premise, retrieve a hypothesis that is entailed by the premise.'
+    },
     'Hieuman/SQuAD': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/squad_hard_negatives.jsonl',
+        'instruction': 'Given a question, retrieve passages that answer the question.'
+    },
+    'Hieuman/SQuAD-reduced': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/squad_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
@@ -175,7 +209,17 @@ DATA = {
         'instruction': 'Classify the given comments as either toxic or not toxic.',
         'enable_cross_batch_negative_sampling': False
     },
+    'Hieuman/Toxic-conversation-reduced': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/toxic_conversations_hard_negatives.jsonl',
+        'instruction': 'Classify the given comments as either toxic or not toxic.',
+        'enable_cross_batch_negative_sampling': False
+    },
     'Hieuman/Tweet-Sentiment': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/tweet_sentiments_hard_negatives.jsonl',
+        'instruction': 'Classify the sentiment of a given tweet as either positive, negative, or neutral.',
+        'enable_cross_batch_negative_sampling': False
+    },
+    'Hieuman/Tweet-Sentiment-reduced': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/tweet_sentiments_hard_negatives.jsonl',
         'instruction': 'Classify the sentiment of a given tweet as either positive, negative, or neutral.',
         'enable_cross_batch_negative_sampling': False
@@ -314,7 +358,15 @@ DATA = {
         'data_path': '/home/hieum/uonlp/lusifer/data/zh/dureader_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
+    'Hieuman/dureader-reduced': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/zh/dureader_hard_negatives.jsonl',
+        'instruction': 'Given a question, retrieve passages that answer the question.'
+    },
     'Hieuman/t2ranking': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/zh/t2ranking_hard_negatives.jsonl',
+        'instruction': 'Given a question, retrieve passages that answer the question.'
+    },
+    'Hieuman/t2ranking-reduced': {
         'data_path': '/home/hieum/uonlp/lusifer/data/zh/t2ranking_hard_negatives.jsonl',
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
