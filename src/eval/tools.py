@@ -90,8 +90,6 @@ def read_results(result_dir: str):
         "Waimai",
         "Ocnli",
         "PawsXPairClassification",
-        "IFlyTek",
-        "TNews",
         "CLSClusteringP2P",
         "CLSClusteringS2S",
         "ThuNewsClusteringP2P",
