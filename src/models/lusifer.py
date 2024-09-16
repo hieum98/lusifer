@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 import os
 from typing import Dict, List, Optional, Tuple, Union
 from datetime import date
@@ -113,6 +114,7 @@ class Lusifer(nn.Module):
             is_freeze_encoder = False
         if is_freeze_encoder:
             self.encoder.requires_grad_(False)
+        self.encoder_backbone_type = encoder_backbone_type
 
         self.pooling_method = pooling_method
 
@@ -199,6 +201,7 @@ class Lusifer(nn.Module):
             'quantization_config': bnb_config,
             'torch_dtype': torch.bfloat16 if attn_implementation == "flash_attention_2" else model_dtype,
             'attn_implementation': attn_implementation,
+            'trust_remote_code': True,
         }
         model_class = AutoModel
         if not is_llm_bidirectional:
@@ -228,8 +231,14 @@ class Lusifer(nn.Module):
                 model_class = BidirectionalGemmaForCausalLM
             elif backbone_type == 'gemma2':
                 model_class = BidirectionalGemma2ForCausalLM
+            elif backbone_type == 'nvidia/NV-Embed-v2':
+                kwargs = {
+                    'pretrained_model_name_or_path': model_name_or_path,
+                    'trust_remote_code': True,
+                }
+                model_class = AutoModel
             else:
-                raise NotImplementedError(f"Backbone type {backbone_type} not implemented")
+                model_class = AutoModel
             
         transformer: PreTrainedModel = model_class.from_pretrained(**kwargs)
 
@@ -331,24 +340,42 @@ class Lusifer(nn.Module):
         attention_mask = self.construct_input_attn_mask(attention_mask)
 
         if is_encoding:
-            encoder_representation = self.encoder(
-                inputs_embeds=universal_representation,
-                attention_mask=attention_mask,
-                return_dict=True,
-                is_causal=False,
-                output_hidden_states=True
-            ).hidden_states[-1] # (batch_size, seq_len, hidden_size)
-            if self.connection_type == 'ff':
-                sentence_representation = self.pooling(
-                    hidden_state=encoder_representation,
+            if self.encoder_backbone_type == 'nvidia/NV-Embed-v2':
+                autocast_ctx = torch.autocast if torch.cuda.is_available() else nullcontext
+                with autocast_ctx('cuda'):
+                    outputs = self.encoder.embedding_model(
+                        input_ids=None, 
+                        inputs_embeds=universal_representation,
+                        attention_mask=attention_mask,
+                    )
+                    ## latent attention layer
+                    pool_mask = attention_mask.clone()
+                    if prompt_length is not None:
+                        for i, l in enumerate(prompt_length):
+                            attention_mask[i, :l] = 0
+                            # Make sure not all zeros - If this happens it is a bug
+                            assert attention_mask[i].sum() > 0, "You have all zeros in the attention mask!"
+                    embeds = self.encoder.latent_attention_model(outputs.last_hidden_state, pool_mask)
+                    return {'reps': embeds, 'projection': embeds}
+            else:    
+                encoder_representation = self.encoder(
+                    inputs_embeds=universal_representation,
                     attention_mask=attention_mask,
-                    prompt_length=prompt_length,
-                ) # (batch_size, hidden_size)
-            else:
-                raise NotImplementedError(f"Connection type {self.connection_type} not implemented")
+                    return_dict=True,
+                    is_causal=False,
+                    output_hidden_states=True
+                ).hidden_states[-1] # (batch_size, seq_len, hidden_size)
+                if self.connection_type == 'ff':
+                    sentence_representation = self.pooling(
+                        hidden_state=encoder_representation,
+                        attention_mask=attention_mask,
+                        prompt_length=prompt_length,
+                    ) # (batch_size, hidden_size)
+                else:
+                    raise NotImplementedError(f"Connection type {self.connection_type} not implemented")
 
-            projected_representation = self.output_projection(sentence_representation) # (batch_size, hidden_size)
-            return {'reps': sentence_representation, 'projection': projected_representation}
+                projected_representation = self.output_projection(sentence_representation) # (batch_size, hidden_size)
+                return {'reps': sentence_representation, 'projection': projected_representation}
         else:
             assert llm_input_ids.size(0) == input_ids.size(0), "The batch size of llm_input_ids and input_ids must be the same"
             embeddings = self.encoder.model.get_input_embeddings()(llm_input_ids)
