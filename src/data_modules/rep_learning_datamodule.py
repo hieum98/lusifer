@@ -1,5 +1,6 @@
 import os
-from typing import List
+import random
+from typing import Dict, List, Sized
 import torch
 from torch.utils.data import DataLoader, Sampler
 import lightning as L
@@ -123,6 +124,107 @@ class ClusteringDataSampler(Sampler):
     """
     A sampler for clustering that gurantees that each batch will comes from same dataset and same cluster.
     """ 
+    def __init__(
+            self,
+            each_data_sizes: List[int],
+            global_batch_size: int,
+            cluster_info: List[Dict[str, List[int]]],
+            shuffle: bool = True,
+            num_replicas: int = 1,
+            rank: int = 0,
+            seed: int = 777,
+            drop_last: bool = False,
+    ) -> None:
+        self.cluster_info = cluster_info
+        self.each_data_sizes = each_data_sizes
+        self.batch_size = global_batch_size
+        self.num_replicas = num_replicas
+        self.rank = rank
+        self.epoch = 0
+        self.drop_last = drop_last
+        self.shuffle = shuffle
+        self.seed = seed
+        self.indices = self.set_indices()
+        self.num_samples = len(self.indices) // self.num_replicas
+
+    def set_indices(self):
+        """
+        Set the indices for the sampler based on the each_data_sizes and global_batch_size to guarantee that each batch comes from the same dataset.
+        """
+        g = torch.Generator()
+        g.manual_seed(self.seed + self.epoch)
+        rnd = random.Random(self.seed + self.epoch)
+        assert len(self.cluster_info) == len(self.each_data_sizes), 'Number of datasets should be equal'
+        indices = []
+        for ds_cluster in self.cluster_info:
+            _indices = []
+            for _, in_cluster_ids in ds_cluster.items():
+                in_cluster_ids = list(in_cluster_ids)
+                if self.shuffle:
+                    rnd.shuffle(in_cluster_ids)
+                _indices.extend(in_cluster_ids)
+            indices.append(_indices)
+
+        # increase the indices by the offset
+        assert len(indices) == len(self.each_data_sizes), 'Number of datasets should be equal'
+        for i in range(len(self.each_data_sizes)):
+            assert len(indices[i]) == self.each_data_sizes[i], 'Number of samples should be equal'
+            indices[i] = [idx + sum(self.each_data_sizes[:i]) for idx in indices[i]]
+        batched_indices = []
+        for data_indices in indices:
+            _batched_indices = list(torch.split(torch.tensor(data_indices), self.batch_size))
+            batched_indices.append(_batched_indices)
+        
+        # Create separate batches from the remaining samples
+        incomplete_indices = []
+        for b in batched_indices:
+            if len(b[-1]) < self.batch_size:
+                incomplete_indices.append(b.pop())
+        
+        if self.drop_last is False and len(incomplete_indices) != 0:
+            # Randomly permute the incomplete indices
+            order = torch.randperm(len(incomplete_indices), generator=g).tolist()
+            incomplete_indices = torch.cat([incomplete_indices[i] for i in order])
+            # Then split again into groups of four & drop the last one if it is incomplete
+            mixed_batches = list(torch.split(incomplete_indices, self.batch_size))
+            if len(mixed_batches[-1]) < self.batch_size:
+                mixed_batches.pop()
+            batched_indices = sum(batched_indices, []) + mixed_batches
+        else:
+            batched_indices = sum(batched_indices, [])
+
+        if self.shuffle:
+            # Shuffle the batches 
+            order = torch.randperm(len(batched_indices), generator=g).tolist()
+        else:
+            order = list(range(len(batched_indices)))
+                         
+        indices = []
+        for batch_idx in order:
+            indices.extend([int(i) for i in batched_indices[batch_idx]])
+        return indices
+
+    def __iter__(self):
+        # subsample
+        indices = self.indices[self.rank:len(self.indices):self.num_replicas]
+        assert len(indices) == self.num_samples
+        return iter(indices)
+
+    def __len__(self) -> int:
+        return self.num_samples
+
+    def set_epoch(self, epoch: int) -> None:
+        r"""
+        Set the epoch for this sampler.
+
+        When :attr:`shuffle=True`, this ensures all replicas
+        use a different random ordering for each epoch. Otherwise, the next iteration of this
+        sampler will yield the same ordering.
+
+        Args:
+            epoch (int): Epoch number.
+        """
+        self.epoch = epoch
 
 
 class RepLearningDataModule(L.LightningDataModule):
@@ -233,8 +335,10 @@ class RepLearningDataModule(L.LightningDataModule):
             label_pad_token_id=-100
         )
         each_data_sizes = [len(dataset) for dataset in self.train_ds.datasets]
-        sampler = ConcatedDataSampler(
+        cluster_infor = [dataset.cluster for dataset in self.train_ds.datasets]
+        sampler = ClusteringDataSampler(
             each_data_sizes=each_data_sizes,
+            cluster_info=cluster_infor,
             global_batch_size=self.global_batch_size,
             shuffle=True,
             num_replicas=self.world_size,

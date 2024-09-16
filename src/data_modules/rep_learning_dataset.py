@@ -1,4 +1,5 @@
 import bisect
+from collections import defaultdict
 import math
 import os
 import random
@@ -6,6 +7,7 @@ from typing import Dict, Tuple
 import einops
 import torch
 from torch.utils.data.dataset import Dataset, ConcatDataset
+import tqdm
 from transformers import PreTrainedTokenizer, BatchEncoding
 import datasets
 
@@ -32,7 +34,7 @@ class RepLearningDataset(Dataset):
         self.seed = seed
         self.rng = random.Random(self.seed)
 
-        self.data = self.get_data(data_name, data_path, number_training_samples)
+        self.data, self.cluster = self.get_data(data_name, data_path, number_training_samples)
 
     def get_data(self, data_name: str, data_path: str=None, number_data: int=1_000_000):
         try:
@@ -70,8 +72,12 @@ class RepLearningDataset(Dataset):
                         selected_index.append(idx)
                     if len(selected_index) >= number_data:
                         break
-            dataset = dataset.select(selected_index)    
-        return dataset
+            dataset = dataset.select(selected_index)
+        cluster = defaultdict(list)
+        for idx, example in tqdm.tqdm(enumerate(dataset), desc=f"Getting cluster info", total=len(dataset)):
+            cluster[example['cluster']].append(idx)
+            
+        return dataset, cluster
 
     def __len__(self):
         return len(self.data)
