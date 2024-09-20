@@ -215,7 +215,7 @@ def main(
     fabric.print("Training is finished")
 
 
-def setup(data_args: DataArguments, model_args: ModelArguments, training_args: TrainingArguments, is_alignment: bool = False):
+def setup(data_args: DataArguments, model_args: ModelArguments, training_args: TrainingArguments, is_alignment: bool = False, run_name: str = None):
     seed_everything(training_args.seed)
 
     if is_alignment:
@@ -277,7 +277,8 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
     logger = choose_logger(
         logger_name=training_args.logger_type,
         out_dir=Path(logger_dir),
-        name=training_args.logger_name,
+        project_name=training_args.logger_name,
+        run_name=run_name,
         log_interval=training_args.log_interval,
     )
 
@@ -315,6 +316,9 @@ if __name__ == "__main__":
     torch.set_float32_matmul_precision('high')
     parser.add_argument(
         "--config_file", type=str, required=True, help="Path to the yaml config file",
+    )
+    parser.add_argument(
+        "--run_name", type=str, default=None, help="Run name"
     )
     parser.add_argument(
         "--model_revision", type=str, default=None, help="Model revision"
@@ -374,4 +378,5 @@ if __name__ == "__main__":
         model_args=model_args,
         training_args=training_args,
         is_alignment=training_args.is_alignment,
+        run_name=args.run_name,
     )

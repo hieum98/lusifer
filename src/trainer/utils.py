@@ -154,17 +154,18 @@ def get_cosine_schedule_with_warmup(
 def choose_logger(
     logger_name: Literal["csv", "tensorboard", "wandb"],
     out_dir: Path,
-    name: str,
+    project_name: str,
+    run_name: str,
     log_interval: int = 1,
     resume: Optional[bool] = None,
     **kwargs: Any,
 ):
     if logger_name == "csv":
-        return CSVLogger(root_dir=(out_dir / "logs"), name="csv", flush_logs_every_n_steps=log_interval, **kwargs)
+        return CSVLogger(root_dir=(out_dir / "logs"), name=run_name, flush_logs_every_n_steps=log_interval, **kwargs)
     if logger_name == "tensorboard":
-        return TensorBoardLogger(root_dir=(out_dir / "logs"), name="tensorboard", **kwargs)
+        return TensorBoardLogger(root_dir=(out_dir / "logs"), name=run_name, **kwargs)
     if logger_name == "wandb":
-        return WandbLogger(project=name, resume=resume, **kwargs)
+        return WandbLogger(project=project_name, name=run_name, resume=resume, **kwargs)
     raise ValueError(f"`--logger_name={logger_name}` is not a valid option. Choose from 'csv', 'tensorboard', 'wandb'.")
 
 
