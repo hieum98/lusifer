@@ -109,8 +109,7 @@ class ContrastiveLoss:
             self.miner = miners.MultiSimilarityMiner(epsilon=0.25)
         else:
             self.miner = None
-
-        self.cross_entropy_loss = nn.CrossEntropyLoss()
+        self.cosine_embeding_loss = nn.CosineEmbeddingLoss(margin=0.1, reduction='mean')
 
     def __call__(
             self, 
@@ -162,19 +161,17 @@ class ContrastiveLoss:
                 loss = self.loss_fn(full_embeds, full_labels)
             loss = loss * world_size # scale the loss to account for the same global batch size
         else:
-            max_idx = torch.max(q_labels)
-            neg_labels = torch.arange(neg_embeds.size(0)*neg_embeds.size(1), device=neg_embeds.device) + max_idx + 1 # (num_neg)
-            neg_labels = einops.rearrange(neg_labels, '(b n) -> b n', b=neg_embeds.size(0), n=neg_embeds.size(1)) # (batch_size, num_neg)
-            
-            candidate_labels = torch.cat([pos_labels, neg_labels], dim=1) # (batch_size, num_pos + num_neg)
             candidate_embeds = torch.cat([pos_embeds, neg_embeds], dim=1) # (batch_size, num_pos + num_neg, embed_dim)
-            
-            # labels[i][j] = 1  if candidate_labels[i][j] == q_labels[i] else 0
-            labels = torch.eq(candidate_labels, einops.repeat(q_labels, 'b -> b n', n=candidate_labels.size(1))) # (batch_size, num_pos + num_neg)
-            labels = torch.softmax(labels.float(), dim=-1) # (batch_size, num_pos + num_neg)
-            # get scores where scores[i][j] = cosine_similarity(q_embeds[i], candidate_embs[i][j])
-            scores = F.cosine_similarity(q_embeds.unsqueeze(1), candidate_embeds, dim=-1) / self.temperature # (batch_size, num_pos + num_neg)
-            loss = self.cross_entropy_loss(scores, labels)
+            candidate_embeds = einops.rearrange(candidate_embeds, 'b n d -> (b n) d')
+            q_embeds = einops.repeat(q_embeds, 'b d -> b n d', n=pos_embeds.size(1) + neg_embeds.size(1))
+            q_embeds = einops.rearrange(q_embeds, 'b n d -> (b n) d')
+            labels = torch.cat([
+                torch.ones(pos_embeds.shape[:-1], device=pos_embeds.device, dtype=torch.long), # (bs, num_pos)
+                -1*torch.ones(neg_embeds.shape[:-1], device=neg_embeds.device, dtype=torch.long), # (bs, num_neg)
+            ], dim=1) # (batch_size, num_pos + num_neg)
+            labels = einops.rearrange(labels, 'b n -> (b n)') # (batch_size * (num_pos + num_neg),)
+
+            loss = self.cosine_embeding_loss(q_embeds, candidate_embeds, labels)
 
         return loss
 
