@@ -53,7 +53,7 @@ def merge_lora(
             raise ValueError("encoder_lora_name is None, thus cannot merge LM LoRA")
         model.encoder = model.encoder.merge_and_unload(progressbar=True)
 
-    return model
+    return model, training_args.model_revision
 
 
 if __name__ == '__main__':
@@ -76,9 +76,12 @@ if __name__ == '__main__':
     parser.add_argument(
         "--output_path", type=str, default='merged_model.pth', help="Path to the output file"
     )
+    parser.add_argument(
+        '--push_to_hub', action='store_true', help='Whether to push the merged model to the hub'
+    )
 
     args = parser.parse_args()
-    model = merge_lora(
+    model, model_revision = merge_lora(
         config_path=args.config_path,
         checkpoint_path=args.checkpoint_path,
         merge_universal_learner_lora=args.merge_universal_learner_lora,
@@ -93,22 +96,33 @@ if __name__ == '__main__':
     # Save the universal learner model
     if args.merge_universal_learner_lora:
         model_to_save = model.universal_learner
-        save_dir = Path(args.output_path).parent / 'universal_learner'
-        model_to_save.save_pretrained(save_dir)
-        # Save the universal learner tokenizer
         universal_learner_tokenizer = model.tokenizer
-        universal_learner_tokenizer.save_pretrained(save_dir)
-        # Remove the universal learner from the model
-        model.universal_learner = None
+        if args.push_to_hub:
+            print(f"Pushing model to hub with name Hieuman/{model_revision}-universal-learner")
+            model_to_save.push_to_hub(f'Hieuman/{model_revision}-universal-learner', private=True)
+            universal_learner_tokenizer.push_to_hub(f'Hieuman/{model_revision}-universal-learner', private=True)
+        else:
+            save_dir = Path(args.output_path).parent / 'universal_learner'
+            print(f"Saving model to {save_dir}")
+            model_to_save.save_pretrained(save_dir)
+            # Save the universal learner tokenizer
+            universal_learner_tokenizer.save_pretrained(save_dir)
     if args.merge_lm_lora:
         model_to_save = model.encoder
-        save_dir = Path(args.output_path).parent / 'encoder'
-        model_to_save.save_pretrained(save_dir)
-        # Save the encoder tokenizer
         encoder_tokenizer = model.encoder_tokenizer
-        encoder_tokenizer.save_pretrained(save_dir)
-        # Remove the encoder from the model
-        model.encoder = None
+        if args.push_to_hub:
+            print(f"Pushing model to hub with name Hieuman/{model_revision}-encoder")
+            model_to_save.push_to_hub(f'Hieuman/{model_revision}-encoder', private=True)
+            encoder_tokenizer.push_to_hub(f'Hieuman/{model_revision}-encoder', private=True)
+        else:
+            save_dir = Path(args.output_path).parent / 'encoder'
+            print(f"Saving model to {save_dir}")
+            model_to_save.save_pretrained(save_dir)
+            # Save the encoder tokenizer
+            encoder_tokenizer.save_pretrained(save_dir)
+    # Remove lms from the model to only save the connector module  
+    model.universal_learner = None
+    model.encoder = None
     torch.save({'model': model.state_dict()}, args.output_path)
 
 

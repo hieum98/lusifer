@@ -261,7 +261,7 @@ if __name__=='__main__':
             max_length=args.max_length,
             is_quick_run=args.is_quick_run,
         )
-    elif args.langs=='all' or 'all' in args.langs:
+    elif args.dataname=='exclude_mteb':
         multilingual_results = eval_multilingual(
             model=model,
             output_folder=args.output_folder,
