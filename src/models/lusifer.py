@@ -239,7 +239,8 @@ class Lusifer(nn.Module):
                 model_class = AutoModel
             else:
                 model_class = AutoModel
-            
+        
+        print(f"Using model class: {model_class}")
         transformer: PreTrainedModel = model_class.from_pretrained(**kwargs)
 
         if use_lora:

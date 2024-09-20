@@ -43,19 +43,28 @@ class WrappedHFModel(nn.Module):
                 use_fp16=True
                 ) # Setting use_fp16 to True speeds up computation with a slight performance degradation
         else:
-            try:
-                self.model = AutoModel.from_pretrained(
-                    model_name_or_path, 
-                    trust_remote_code=True, 
-                    torch_dtype=torch.bfloat16,
-                    attn_implementation='flash_attention_2'
-                    )
-            except:
-                self.model = AutoModel.from_pretrained(
-                    model_name_or_path, 
-                    trust_remote_code=True, 
-                    torch_dtype=torch.bfloat16
-                    )
+            # check if gpu is support bf16
+            if torch.cuda.is_available():
+                if torch.cuda.is_bf16_supported():
+                    print("GPU supports bfloat16, using it for faster and more memory efficient computation.")
+                    torch_dtype = torch.bfloat16
+                else:
+                    print("GPU does not support bfloat16, using float16 for faster and more memory efficient computation.")
+                    torch_dtype = torch.float16
+            # Check whether gpu is ampere or newer
+            if torch.cuda.is_available():
+                if torch.cuda.get_device_properties(0).major >= 8:
+                    print("GPU is ampere or newer, using flash_attention_2 for faster and more memory efficient computation.")
+                    attn_implementation = 'flash_attention_2'
+                else:
+                    print("GPU is older than ampere, using sdpa")
+                    attn_implementation = 'sdpa'
+            self.model = AutoModel.from_pretrained(
+                model_name_or_path, 
+                trust_remote_code=True, 
+                torch_dtype=torch_dtype,
+                attn_implementation=attn_implementation
+                )
             self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
         
             if self.tokenizer.pad_token_id is None:
@@ -102,7 +111,7 @@ class WrappedHFModel(nn.Module):
             ):
         if self.model_name_or_path in ['intfloat/multilingual-e5-large']:
             return self.average_pool(last_hidden_states, attention_mask)
-        elif self.model_name_or_path in ['BAAI/bge-multilingual-gemma2', 'Alibaba-NLP/gte-multilingual-base']:
+        elif self.model_name_or_path in ['BAAI/bge-multilingual-gemma2', 'Alibaba-NLP/gte-multilingual-base', 'Salesforce/SFR-Embedding-2_R']:
             return self.last_token_pool(last_hidden_states, attention_mask)
         else:
             return self.average_pool(last_hidden_states, attention_mask)
