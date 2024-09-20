@@ -37,6 +37,7 @@ class RepLearningDataset(Dataset):
         self.data, self.cluster = self.get_data(data_name, data_path, number_training_samples)
 
     def get_data(self, data_name: str, data_path: str=None, number_data: int=1_000_000):
+        print(f"Loading data {data_name}...")
         try:
             dataset = datasets.load_dataset(data_name, split='train')
         except:
@@ -73,9 +74,15 @@ class RepLearningDataset(Dataset):
                     if len(selected_index) >= number_data:
                         break
             dataset = dataset.select(selected_index)
-        cluster = defaultdict(list)
-        for idx, example in tqdm.tqdm(enumerate(dataset), desc=f"Getting cluster info", total=len(dataset)):
-            cluster[example['cluster']].append(idx)
+
+        print(f"Assigning cluster to each example for the dataset {data_name} of size {len(dataset)}...")
+        cluster = dataset.map(lambda example, idx: {'cluster': example['cluster'], 'id': idx}, with_indices=True, 
+                                      num_proc=max_num_worker_suggest, remove_columns=dataset.column_names, load_from_cache_file=False)
+        # group by cluster
+        cluster = cluster.to_pandas()
+        cluster = cluster.groupby('cluster')['id'].apply(list).reset_index()
+        cluster = cluster.to_dict(orient='records')
+        cluster = {clus['cluster']: clus['id'] for clus in cluster}
             
         return dataset, cluster
 
