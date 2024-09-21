@@ -302,6 +302,11 @@ class RepLearningDataModule(L.LightningDataModule):
     def set_epoch(self, epoch: int) -> None:
         self.seed = self.seed + epoch
 
+    def prepare_data(self) -> None:
+        for data_name in self.data_names:
+            print(f"Loading {data_name} dataset.")
+            load_dataset(data_name)
+
     def setup(self, stage: str='') -> None:
         train_datasets = []
         for data_name in self.data_names:

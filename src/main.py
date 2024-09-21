@@ -153,11 +153,13 @@ def main(
 
     # Initialize the trainer
     if is_alignmnent:
+        fabric.print("Alignment training using AlignmentTrainer")
         trainer = AlignmentTrainer(
             fabric=fabric,
             num_accumulation_steps=num_accumulation_steps,
         )
     elif is_cross_batch_loss:
+        fabric.print("Representation learning with cross-batch loss using GradCacheTrainer")
         trainer = GradCacheTrainer(
             fabric=fabric,
             loss_type=training_args.loss_type,
@@ -167,6 +169,7 @@ def main(
             chunk_size=training_args.gc_chunk_size,
         )
     else:
+        fabric.print("Representation learning using SupervisedTrainer")
         trainer = SupervisedTrainer(
             fabric=fabric,
             num_accumulation_steps=num_accumulation_steps,
@@ -226,6 +229,7 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
     seed_everything(training_args.seed)
 
     if is_alignment:
+        print(f"Alignment training that using {PretrainingDataModule} data module") 
         train_data = PretrainingDataModule(
             is_reconstruct=data_args.is_reconstruct,
             is_query_positive_alignment=data_args.is_query_positive_alignment,
@@ -233,6 +237,7 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
             seed=training_args.seed
         )
     else:
+        print(f"Representation learning training that using {RepLearningDataModule} data module")
         train_data = RepLearningDataModule(
             langs=data_args.langs,
             use_retrieval_data_only=data_args.use_retrieval_data_only,
