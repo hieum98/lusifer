@@ -1,3 +1,4 @@
+# Data args
 is_query_positive_alignment: false
 is_reconstruct: false
 langs:
@@ -8,6 +9,8 @@ num_workers: 8
 number_training_samples: 2000
 pos_per_sample: 3
 use_retrieval_data_only: false
+
+# Model args
 attn_implementation: flash_attention_2
 connection_type: ff
 dropout: 0.1
@@ -21,14 +24,16 @@ num_added_tokens: 0
 universal_learner_backbone_type: xlm-r
 universal_learner_lora_name: universal_learner_lora
 universal_learner_name_or_path: Hieuman/xlm-mistral-cl-phase1-universal-learner
+
+# Training args
 activation_checkpointing: true
 checkpoint_dir: output/xlm-mistral-cl-phase1
 checkpoint_file: output/xlm-mistral-cl-phase1/init_best_en_model.ckpt
 checkpoint_interval: 500
 devices: 4
 eval_batch_size: 128
-gc_chunk_size: 2
-global_batch_size: 64
+gc_chunk_size: 16
+global_batch_size: 256
 grad_norm_clip: null
 is_alignment: false
 is_distance: true
