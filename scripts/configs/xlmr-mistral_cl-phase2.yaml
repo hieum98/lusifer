@@ -4,7 +4,7 @@ is_reconstruct: false
 langs:
 - en
 max_seq_length: 512
-neg_per_sample: 16
+neg_per_sample: 8
 num_workers: 8
 number_training_samples: 2000
 pos_per_sample: 1
@@ -33,7 +33,7 @@ checkpoint_interval: 500
 devices: 4
 eval_batch_size: 128
 gc_chunk_size: 16
-global_batch_size: 256
+global_batch_size: 128
 grad_norm_clip: null
 is_alignment: false
 is_distance: true
