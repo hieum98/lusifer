@@ -20,6 +20,7 @@ from src.data_modules.rep_learning_datamodule import RepLearningDataModule, get_
 from src.data_modules.pretraining_datamodule import PretrainingDataModule, get_dataloaders as get_pretraining_dataloaders
 from src.models.lusifer import Lusifer
 from src.models.utils import get_wrapping_policy, get_activation_checkpointing_policy
+from src.trainer.supervised_trainer import SupervisedTrainer
 from src.trainer.gradcache_trainer import GradCacheTrainer
 from src.trainer.alignment_trainer import AlignmentTrainer
 from src.args import DataArguments, ModelArguments, TrainingArguments
@@ -39,6 +40,7 @@ def main(
         model_args: ModelArguments,
         training_args: TrainingArguments,
         is_alignmnent: bool = False,
+        is_cross_batch_loss: bool = False,
         ):
     fabric.seed_everything(training_args.seed)
 
@@ -94,7 +96,7 @@ def main(
     fabric.barrier()
 
     # Setup the optimizer and scheduler
-    if is_alignmnent:
+    if is_alignmnent or (not is_cross_batch_loss):
         num_accumulation_steps = training_args.global_batch_size // (training_args.gc_chunk_size * fabric.world_size)
         step_per_epoch = len(train_dataloader) // num_accumulation_steps
     else:
@@ -155,7 +157,7 @@ def main(
             fabric=fabric,
             num_accumulation_steps=num_accumulation_steps,
         )
-    else:
+    elif is_cross_batch_loss:
         trainer = GradCacheTrainer(
             fabric=fabric,
             loss_type=training_args.loss_type,
@@ -163,6 +165,11 @@ def main(
             is_distance=training_args.is_distance,
             use_miner=training_args.use_miner,
             chunk_size=training_args.gc_chunk_size,
+        )
+    else:
+        trainer = SupervisedTrainer(
+            fabric=fabric,
+            num_accumulation_steps=num_accumulation_steps,
         )
 
     current_epoch_num = state.get("epoch_num", 0)
@@ -232,6 +239,7 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
             num_workers=data_args.num_workers,
             seed=training_args.seed
         )
+        is_cross_batch_loss = data_args.use_retrieval_data_only
 
     strategy = training_args.strategy
     if training_args.nodes > 1 or training_args.devices > 1:
@@ -301,6 +309,7 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
         model_args=model_args,
         training_args=training_args,
         is_alignmnent=is_alignment,
+        is_cross_batch_loss=is_cross_batch_loss,
     )
 
 

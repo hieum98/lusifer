@@ -1,3 +1,4 @@
+from typing import Optional
 import einops
 import torch
 import torch.distributed
@@ -114,9 +115,9 @@ class ContrastiveLoss:
     def __call__(
             self, 
             q_embeds: torch.Tensor, # (batch_size, embed_dim) 
-            q_labels: torch.Tensor, # (batch_size,)
             pos_embeds: torch.Tensor, # (batch_size, num_pos, embed_dim)
             neg_embeds: torch.Tensor, # (batch_size, num_neg, embed_dim)
+            q_labels: Optional[torch.Tensor]=None, # (batch_size,)
             cross_batch_loss: bool = True,
             ):
         
@@ -128,10 +129,9 @@ class ContrastiveLoss:
             torch.distributed.all_gather(all_cross_batch_loss, cross_batch_loss)
             # if all the processes have cross_batch_loss=True, then the cross_batch_loss=True
             cross_batch_loss = all([x.item() for x in all_cross_batch_loss])
-
-        pos_labels = einops.repeat(q_labels, 'b -> b n', n=pos_embeds.size(1)) # (batch_size, num_pos)
         
         if cross_batch_loss:
+            pos_labels = einops.repeat(q_labels, 'b -> b n', n=pos_embeds.size(1)) # (batch_size, num_pos)
             pos_labels = einops.rearrange(pos_labels, 'b n -> (b n)')
             pos_embeds = einops.rearrange(pos_embeds, 'b n d -> (b n) d') # (batch_size * num_pos, embed_dim)
             neg_embeds = einops.rearrange(neg_embeds, 'b n d -> (b n) d') # (batch_size * num_neg, embed_dim)
@@ -161,14 +161,20 @@ class ContrastiveLoss:
                 loss = self.loss_fn(full_embeds, full_labels)
             loss = loss * world_size # scale the loss to account for the same global batch size
         else:
-            candidate_embeds = torch.cat([pos_embeds, neg_embeds], dim=1) # (batch_size, num_pos + num_neg, embed_dim)
-            candidate_embeds = einops.rearrange(candidate_embeds, 'b n d -> (b n) d')
             q_embeds = einops.repeat(q_embeds, 'b d -> b n d', n=pos_embeds.size(1) + neg_embeds.size(1))
-            q_embeds = einops.rearrange(q_embeds, 'b n d -> (b n) d')
+            candidate_embeds = torch.cat([pos_embeds, neg_embeds], dim=1) # (batch_size, num_pos + num_neg, embed_dim)
+            # labels: 1 for positive samples, -1 for negative samples
             labels = torch.cat([
                 torch.ones(pos_embeds.shape[:-1], device=pos_embeds.device, dtype=torch.long), # (bs, num_pos)
                 -1*torch.ones(neg_embeds.shape[:-1], device=neg_embeds.device, dtype=torch.long), # (bs, num_neg)
             ], dim=1) # (batch_size, num_pos + num_neg)
+            # shuffle the candidate_embeds and labels to avoid the trivial solution
+            random_indices = torch.randperm(labels.size(1))
+            candidate_embeds = candidate_embeds[:, random_indices]
+            labels = labels[:, random_indices]
+
+            q_embeds = einops.rearrange(q_embeds, 'b n d -> (b n) d')
+            candidate_embeds = einops.rearrange(candidate_embeds, 'b n d -> (b n) d')
             labels = einops.rearrange(labels, 'b n -> (b n)') # (batch_size * (num_pos + num_neg),)
 
             loss = self.cosine_embeding_loss(q_embeds, candidate_embeds, labels)
