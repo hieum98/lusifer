@@ -45,7 +45,7 @@ class SupervisedTrainer:
         :param batch: batch of inputs
         :return: loss value
         """
-        enable_cross_batch_negative_sampling = True
+        enable_cross_batch_negative_sampling = False
         query_input_ids = model_inputs['query_input_ids']
         query_attention_mask = model_inputs['query_attention_mask']
         query_prompt_length = model_inputs['query_prompt_length']

@@ -384,6 +384,7 @@ def get_dataloaders(
     )
     if fabric.global_rank == 0:
         data_module.prepare_data()
+    fabric.barrier()
     data_module.set_epoch(epoch)
     with fabric.rank_zero_first():
         data_module.setup()
