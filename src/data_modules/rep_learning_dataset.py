@@ -38,10 +38,7 @@ class RepLearningDataset(Dataset):
 
     def get_data(self, data_name: str, data_path: str=None, number_data: int=1_000_000):
         print(f"Loading data {data_name}...")
-        try:
-            dataset = datasets.load_dataset(data_name, split='train')
-        except:
-            dataset = datasets.load_dataset('json', data_files=data_path, split='train')
+        dataset = datasets.load_dataset(data_name, split='train')
         
         max_num_worker_suggest = 1
         try:

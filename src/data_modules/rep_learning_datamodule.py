@@ -305,6 +305,7 @@ class RepLearningDataModule(L.LightningDataModule):
     def prepare_data(self) -> None:
         for data_name in self.data_names:
             print(f"Loading {data_name} dataset.")
+            # Download the dataset if not already downloaded
             load_dataset(data_name)
 
     def setup(self, stage: str='') -> None:
@@ -381,6 +382,8 @@ def get_dataloaders(
         neg_per_sample=data_args.neg_per_sample,
         pos_per_sample=data_args.pos_per_sample,
     )
+    if fabric.global_rank == 0:
+        data_module.prepare_data()
     data_module.set_epoch(epoch)
     with fabric.rank_zero_first():
         data_module.setup()
