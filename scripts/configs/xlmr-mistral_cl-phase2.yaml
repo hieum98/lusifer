@@ -4,10 +4,10 @@ is_reconstruct: false
 langs:
 - en
 max_seq_length: 512
-neg_per_sample: 32
+neg_per_sample: 16
 num_workers: 8
 number_training_samples: 2000
-pos_per_sample: 3
+pos_per_sample: 1
 use_retrieval_data_only: false
 
 # Model args
