@@ -31,7 +31,7 @@ checkpoint_dir: output/xlm-mistral-cl-phase2.test1
 checkpoint_file: output/xlm-mistral-cl-phase1/lastest.ckpt
 checkpoint_interval: 500
 devices: 4
-eval_batch_size: 128
+eval_batch_size: 64
 gc_chunk_size: 2
 global_batch_size: 32
 grad_norm_clip: null
