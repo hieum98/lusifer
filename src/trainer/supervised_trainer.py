@@ -15,7 +15,7 @@ import lightning as L
 
 from src.models.lusifer import Lusifer, WrappedLusifer
 from src.trainer.loss import ContrastiveLoss
-from src.trainer.utils import split_input
+from src.trainer.utils import clear_unused_gpu_mem, split_input
 from src.eval.eval import eval_multilingual, eval_mteb
 
 
@@ -191,7 +191,7 @@ class SupervisedTrainer:
                 else:
                     self.fabric.save(checkpoint_path, state)
                 self.fabric.print(f"Checkpoint saved at {checkpoint_path}")
-                torch.cuda.empty_cache()
+                clear_unused_gpu_mem()
                 self.fabric.load(checkpoint_path, state, strict=False)
                 model = state.pop("model")
                 optimizer = state.pop("optimizer")
@@ -229,7 +229,7 @@ class SupervisedTrainer:
                     # Eval logic here
                     self.fabric.print("Model evaluation finished")
                     del eval_model
-                    torch.cuda.empty_cache()
+                    clear_unused_gpu_mem()
 
                     # Save best checkpoint based on evaluation
                     if results['Avg/mteb_quick_avg'] > self.best_en:
@@ -243,7 +243,7 @@ class SupervisedTrainer:
                         shutil.copy(checkpoint_path, best_checkpoint_path)
                         self.fabric.print(f"Best multi checkpoint saved at {best_checkpoint_path}")
                 gc.collect()
-                torch.cuda.empty_cache()
+                clear_unused_gpu_mem()
                 self.fabric.barrier()
         return checkpoint_path
     

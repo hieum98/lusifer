@@ -9,6 +9,7 @@ import lightning as L
 
 from src.models.lusifer import Lusifer, WrappedLusifer
 from src.eval.eval import eval_mteb, eval_multilingual
+from src.trainer.utils import clear_unused_gpu_mem
 
 class AlignmentTrainer:
     def __init__(
@@ -130,7 +131,7 @@ class AlignmentTrainer:
                 else:
                     self.fabric.save(checkpoint_path, state)
                 self.fabric.print(f"Checkpoint saved at {checkpoint_path}")
-                torch.cuda.empty_cache()
+                clear_unused_gpu_mem()
                 self.fabric.load(checkpoint_path, state, strict=False)
                 model = state.pop("model")
                 optimizer = state.pop("optimizer")
@@ -171,7 +172,7 @@ class AlignmentTrainer:
                     # Eval logic here
                     self.fabric.print("Model evaluation finished")
                     del eval_model
-                    torch.cuda.empty_cache()
+                    clear_unused_gpu_mem()
 
                     # Save best checkpoint based on evaluation
                     if results['Avg/mteb_quick_avg'] >= self.best_en:

@@ -27,7 +27,7 @@ from src.trainer.supervised_trainer import SupervisedTrainer
 from src.trainer.gradcache_trainer import GradCacheTrainer
 from src.trainer.alignment_trainer import AlignmentTrainer
 from src.args import DataArguments, ModelArguments, TrainingArguments
-from src.trainer.utils import choose_logger, get_cosine_schedule_with_warmup, get_trainable_parameters, trainable_filter
+from src.trainer.utils import choose_logger, clear_unused_gpu_mem, get_cosine_schedule_with_warmup, get_trainable_parameters, trainable_filter
 
 
 backbone_to_layer_type = {
@@ -195,7 +195,8 @@ def main(
         del eval_model
     # clean up eval_model
     gc.collect()
-    torch.cuda.empty_cache()
+    clear_unused_gpu_mem()
+    fabric.barrier()
 
 
     # Initialize the trainer
@@ -263,7 +264,7 @@ def main(
         )
         fabric.barrier()
         # Reload the model from the checkpoint 
-        torch.cuda.empty_cache()
+        clear_unused_gpu_mem()
         state['model'] = model
         fabric.load(checkpoint_path, state, strict=False)
         model = state.pop("model")
