@@ -1,6 +1,7 @@
 import copy
 from dataclasses import asdict
 import datetime
+import gc
 import os
 import yaml
 from pathlib import Path
@@ -192,6 +193,10 @@ def main(
         fabric.print(f"Mteb results : {mteb_results}")
         fabric.print(f"Multilingual results : {multilingual_results}")
         del eval_model
+    # clean up eval_model
+    gc.collect()
+    torch.cuda.empty_cache()
+
 
     # Initialize the trainer
     if is_alignmnent:

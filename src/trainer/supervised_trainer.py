@@ -1,3 +1,4 @@
+import gc
 import shutil
 from collections import UserDict
 import pathlib
@@ -241,6 +242,8 @@ class SupervisedTrainer:
                         best_checkpoint_path = pathlib.Path(checkpoint_dir) / "best_multi.ckpt"
                         shutil.copy(checkpoint_path, best_checkpoint_path)
                         self.fabric.print(f"Best multi checkpoint saved at {best_checkpoint_path}")
+                gc.collect()
+                torch.cuda.empty_cache()
                 self.fabric.barrier()
         return checkpoint_path
     
