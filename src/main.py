@@ -17,9 +17,10 @@ from transformers.models.qwen2.modeling_qwen2 import Qwen2DecoderLayer
 from transformers.models.mt5.modeling_mt5 import MT5Block
 from transformers.models.xlm_roberta.modeling_xlm_roberta import XLMRobertaLayer
 
+from src.eval.eval import eval_mteb, eval_multilingual
 from src.data_modules.rep_learning_datamodule import RepLearningDataModule, get_dataloaders as get_rep_learning_dataloaders
 from src.data_modules.pretraining_datamodule import PretrainingDataModule, get_dataloaders as get_pretraining_dataloaders
-from src.models.lusifer import Lusifer
+from src.models.lusifer import Lusifer, WrappedLusifer
 from src.models.utils import get_wrapping_policy, get_activation_checkpointing_policy
 from src.trainer.supervised_trainer import SupervisedTrainer
 from src.trainer.gradcache_trainer import GradCacheTrainer
@@ -140,20 +141,57 @@ def main(
         "current_step": 0,
         "epoch_num": 0,
     }
+    checkpoint_path = None
     if training_args.checkpoint_file is not None:
         checkpoint_path = training_args.checkpoint_file
         if os.path.exists(checkpoint_path):
             fabric.print(f"Load checkpoint from {checkpoint_path}")
             if training_args.only_load_model:
+                print(f"Only load model from {checkpoint_path}")
                 model_state = {'model': model}
                 remaining_keys = fabric.load(checkpoint_path, model_state, strict=False)
+                remaining_keys = remaining_keys.get("model", None)
                 fabric.print(f"Following keys are not loaded: {remaining_keys}")
                 model = model_state.pop("model")
             else:
+                print(f"Load all states from {checkpoint_path}")
                 state['model'] = model
                 remaining_keys = fabric.load(checkpoint_path, state, strict=False)
                 fabric.print(f"Following keys are not loaded: {remaining_keys}")
                 model = state.pop("model")
+
+    # Evaluate the initial model
+    if fabric.global_rank == 0:
+        model_hprams = model.hprams
+        _model_revision = f"{training_args.model_revision}_initial"
+        eval_model = WrappedLusifer(
+            model_revision=_model_revision, 
+            model_checkpoint=checkpoint_path,
+            **model_hprams
+            )
+        mteb_results = eval_mteb(
+            model=eval_model,
+            output_folder=training_args.checkpoint_dir,
+            batch_size=training_args.eval_batch_size,
+            is_quick_run=True,
+        )
+        multilingual_results = eval_multilingual(
+            model=eval_model,
+            langs=['en', 'ru', 'vi', 'zh'],
+            output_folder=training_args.checkpoint_dir,
+            batch_size=training_args.eval_batch_size,
+            is_quick_run=True,
+        )
+        results = {
+            'Avg/mteb_quick_avg': mteb_results['avg']['all_tasks'],
+            'Avg/multilingual_quick_avg': multilingual_results['avg']['all_tasks'],
+        }
+        fabric.log_dict(results, step=0)
+        # Eval logic here
+        fabric.print("Model evaluation finished")
+        fabric.print(f"Mteb results : {mteb_results}")
+        fabric.print(f"Multilingual results : {multilingual_results}")
+        del eval_model
 
     # Initialize the trainer
     if is_alignmnent:

@@ -12,7 +12,7 @@ num_workers: 8
 
 # Model args
 universal_learner_name_or_path: FacebookAI/xlm-roberta-large
-encoder_name_or_path: mistralai/Mistral-7B-Instruct-v0.3
+encoder_name_or_path: mistralai/Mistral-7B-v0.1
 universal_learner_backbone_type: xlm-r
 encoder_backbone_type: mistral
 is_freeze_universal_learner: false
@@ -34,7 +34,7 @@ model_revision: 'xlm-mistral-alignment-phase1'
 # Training strategy args
 precision: 'bf16-mixed'
 strategy: 'fsdp'
-sharding_strategy: 'shard_grad_op'
+sharding_strategy: 'full_shard'
 activation_checkpointing: True
 use_cpu_offload: False
 quantization: False

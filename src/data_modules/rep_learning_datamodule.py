@@ -267,6 +267,7 @@ class RepLearningDataModule(L.LightningDataModule):
                 self.data_names.extend(lang_to_data[l])
         self.data_names = list(set(self.data_names))
         self.data_names.sort()
+        # self.data_names = [self.data_names[0]]
         print(f"Data names: {self.data_names}")
         self.num_workers = num_workers
         self.seed = seed

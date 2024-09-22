@@ -23,12 +23,12 @@ lora_alpha: 32
 num_added_tokens: 0
 universal_learner_backbone_type: xlm-r
 universal_learner_lora_name: universal_learner_lora
-universal_learner_name_or_path: Hieuman/xlm-mistral-cl-phase1-universal-learner
+universal_learner_name_or_path: Hieuman/xlm-aligned-for-mistral-v0.3
 
 # Training args
 activation_checkpointing: true
 checkpoint_dir: output/xlm-mistral-cl-phase2.test1
-checkpoint_file: output/xlm-mistral-cl-phase1/connector.ckpt
+checkpoint_file: output/xlm-mistral-cl-phase1/lastest.ckpt
 checkpoint_interval: 500
 devices: 4
 eval_batch_size: 128

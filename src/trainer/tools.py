@@ -74,7 +74,7 @@ if __name__ == '__main__':
         "--merge_lm_lora", action='store_true', help="Whether to merge LM LoRA"
     )
     parser.add_argument(
-        "--output_path", type=str, default='merged_model.pth', help="Path to the output file"
+        "--output_path", type=str, default=None, help="Path to the output file"
     )
     parser.add_argument(
         '--push_to_hub', action='store_true', help='Whether to push the merged model to the hub'
@@ -123,7 +123,9 @@ if __name__ == '__main__':
     # Remove lms from the model to only save the connector module  
     model.universal_learner = None
     model.encoder = None
-    torch.save({'model': model.state_dict()}, args.output_path)
+    if args.output_path is not None:
+        print(f"Saving model to {args.output_path}")
+        torch.save({'model': model.state_dict()}, args.output_path)
 
 
 

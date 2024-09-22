@@ -1,24 +1,23 @@
 # Data args
 langs:
   - en
-is_reconstruct: false
-is_query_positive_alignment: true
+use_retrieval_data_only: True
 max_seq_length: 512
-number_training_samples: 500_000
+number_training_samples: 50_000
 neg_per_sample: 32
 pos_per_sample: 3
 num_workers: 8
 
 # Model args
-universal_learner_name_or_path: output/xlm-mistral-aligment-phase1-pq-align.v1/universal_learner
-encoder_name_or_path: mistralai/Mistral-7B-v0.1
+universal_learner_name_or_path: output/xlm-mistral.v0.1/universal_learner
+encoder_name_or_path: output/xlm-mistral.v0.1/encoder
 universal_learner_backbone_type: xlm-r
 encoder_backbone_type: mistral
 is_freeze_universal_learner: false
 connection_type: ff
 num_added_tokens: 0
 # Lora args
-encoder_lora_name: null # When alignment training, we freeze the encoder
+encoder_lora_name: encoder_lora
 universal_learner_lora_name: universal_learner_lora # Not configured, default is None
 loar_r: 16
 lora_alpha: 32
@@ -27,13 +26,13 @@ dropout: 0.1
 attn_implementation: 'flash_attention_2'
 
 # Training args
-is_alignment: true
+is_alignment: false
 seed: 777
-model_revision: 'xlm-mistral-alignment-phase1'
+model_revision: 'xlm-mistral.v0.1'
 # Training strategy args
 precision: 'bf16-mixed'
 strategy: 'fsdp'
-sharding_strategy: 'full_shard'
+sharding_strategy: 'shard_grad_op'
 activation_checkpointing: True
 use_cpu_offload: False
 quantization: False
@@ -43,15 +42,15 @@ temperature: 0.05
 use_miner: True
 is_distance: True
 # Optimization args
-global_batch_size: 256
+global_batch_size: 64
 eval_batch_size: 128
-max_epochs: 5
-max_steps: 10000
+max_epochs: 2
+max_steps: 100000
 weight_decay: 0.0
 warmpup_proportion: 0.1
 # grad_norm_clip: 1.0 # Not configured, default is None
 # Checkpoint args
-checkpoint_interval: 1000
+checkpoint_interval: 500
 logger_type: 'wandb'
 logger_name: 'xlm-mistral'
 

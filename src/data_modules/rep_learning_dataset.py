@@ -55,11 +55,14 @@ class RepLearningDataset(Dataset):
             # group by cluster
             cluster_with_id = cluster_with_id.groupby('cluster')['id'].apply(list).reset_index()
             cluster_with_id = cluster_with_id.to_dict(orient='records')
+            # sort by the number of examples in the cluster
+            cluster_with_id.sort(key=lambda x: len(x['id']))
 
             # get the examples
             selected_index = []
             for clus in cluster_with_id:
                 in_cluster_index = clus['id']
+                in_cluster_index.sort()
                 in_cluster_index = self.rng.sample(in_cluster_index, min(len(in_cluster_index), example_per_cluster))
                 selected_index.extend(in_cluster_index)
             
@@ -71,6 +74,7 @@ class RepLearningDataset(Dataset):
                         selected_index.append(idx)
                     if len(selected_index) >= number_data:
                         break
+            selected_index.sort()
             dataset = dataset.select(selected_index)
 
         print(f"Assigning cluster to each example for the dataset {data_name} of size {len(dataset)}...")
@@ -80,7 +84,8 @@ class RepLearningDataset(Dataset):
         cluster = cluster.to_pandas()
         cluster = cluster.groupby('cluster')['id'].apply(list).reset_index()
         cluster = cluster.to_dict(orient='records')
-        cluster = {clus['cluster']: clus['id'] for clus in cluster}
+        cluster.sort(key=lambda x: x['cluster'])
+        cluster = {clus['cluster']: sorted(clus['id']) for clus in cluster}
             
         return dataset, cluster
 
