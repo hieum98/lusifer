@@ -201,7 +201,7 @@ class TrainingArguments:
         metadata={"help": "Proportion of training steps to perform linear learning rate warmup for. E.g., 0.1 = 10% of training."}
     )
     grad_norm_clip: float = field(
-        default=None,
+        default=1.0,
         metadata={"help": "Gradient norm clipping value"}
     )
     
