@@ -11,3 +11,10 @@ draft.py
 scripts/*.sh
 runai.sh
 mgte
+bge-m3
+mmpnet-v2
+udever-bloom-7B
+Nv-emb
+SFR-2R
+mbge-gemma2
+*.log

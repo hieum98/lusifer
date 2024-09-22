@@ -4,10 +4,10 @@ is_reconstruct: false
 langs:
 - en
 max_seq_length: 512
-neg_per_sample: 8
+neg_per_sample: 64
 num_workers: 8
 number_training_samples: 2000
-pos_per_sample: 1
+pos_per_sample: 3
 use_retrieval_data_only: false
 
 # Model args
@@ -27,24 +27,24 @@ universal_learner_name_or_path: Hieuman/xlm-mistral-cl-phase1-universal-learner
 
 # Training args
 activation_checkpointing: true
-checkpoint_dir: output/xlm-mistral-cl-phase1
-checkpoint_file: output/xlm-mistral-cl-phase1/init_best_en_model.ckpt
+checkpoint_dir: output/xlm-mistral-cl-phase2.test1
+checkpoint_file: output/xlm-mistral-cl-phase1/connector.ckpt
 checkpoint_interval: 500
 devices: 4
 eval_batch_size: 128
-gc_chunk_size: 16
-global_batch_size: 128
+gc_chunk_size: 2
+global_batch_size: 32
 grad_norm_clip: null
 is_alignment: false
 is_distance: true
-learning_rate: 5.0e-05
+learning_rate: 5.0e-06
 log_interval: 1
 logger_name: xlm-mistral
 logger_type: wandb
 loss_type: NTXentLoss
 max_epochs: 4
 max_steps: 100000
-min_learning_rate: 1.0e-06
+min_learning_rate: 1.0e-07
 model_revision: xlm-mistral-cl
 nodes: 1
 only_load_model: true

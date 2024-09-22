@@ -265,7 +265,9 @@ class RepLearningDataModule(L.LightningDataModule):
         else:
             for l in langs:
                 self.data_names.extend(lang_to_data[l])
+        self.data_names = list(set(self.data_names))
         self.data_names.sort()
+        print(f"Data names: {self.data_names}")
         self.num_workers = num_workers
         self.seed = seed
     
@@ -370,13 +372,17 @@ def get_dataloaders(
         model_args: ModelArguments,
         training_args: TrainingArguments,
         epoch: int = 0,
+        is_cross_batch_loss=True
         ):
+    print(f"Creating dataloaders for epoch {epoch} with cross_batch_loss={is_cross_batch_loss}")
+    batch_size = training_args.global_batch_size if is_cross_batch_loss else training_args.gc_chunk_size * fabric.world_size
+    print(f"Batch size: {batch_size}")
     data_module.connect(
         world_size=fabric.world_size,
         global_rank=fabric.global_rank,
         tokenizer=tokenizer, 
         special_tokens_set=model_args.universal_learner_backbone_type,
-        global_batch_size=training_args.global_batch_size,
+        global_batch_size=training_args.global_batch_size if is_cross_batch_loss else training_args.gc_chunk_size * fabric.world_size,
         max_seq_length=data_args.max_seq_length,
         number_training_samples=data_args.number_training_samples,
         neg_per_sample=data_args.neg_per_sample,
@@ -402,9 +408,9 @@ if __name__=='__main__':
 
     seed_everything(777)
     tokenizer = AutoTokenizer.from_pretrained('FacebookAI/xlm-roberta-large')
-    dm = RepLearningDataModule(langs=['en'], num_workers=0, seed=777, use_retrieval_data_only=True)
+    dm = RepLearningDataModule(langs=['en'], num_workers=0, seed=777, use_retrieval_data_only=False)
     dm.connect(
-        world_size=1,
+        world_size=4,
         global_rank=0,
         tokenizer=tokenizer,
         special_tokens_set='xlm-r',

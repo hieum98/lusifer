@@ -32,6 +32,7 @@ class RepLearningDataset(Dataset):
         self.neg_per_sample = neg_per_sample
         self.pos_per_sample = pos_per_sample
         self.seed = seed
+        print(f"Seed: {self.seed}")
         self.rng = random.Random(self.seed)
 
         self.data, self.cluster = self.get_data(data_name, data_path, number_training_samples)

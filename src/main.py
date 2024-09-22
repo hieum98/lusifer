@@ -1,3 +1,4 @@
+import copy
 from dataclasses import asdict
 import datetime
 import os
@@ -92,6 +93,7 @@ def main(
             data_args=data_args,
             model_args=model_args,
             training_args=training_args,
+            is_cross_batch_loss=is_cross_batch_loss,
         )
     fabric.barrier()
 
@@ -144,11 +146,13 @@ def main(
             fabric.print(f"Load checkpoint from {checkpoint_path}")
             if training_args.only_load_model:
                 model_state = {'model': model}
-                fabric.load(checkpoint_path, model_state, strict=False)
+                remaining_keys = fabric.load(checkpoint_path, model_state, strict=False)
+                fabric.print(f"Following keys are not loaded: {remaining_keys}")
                 model = model_state.pop("model")
             else:
                 state['model'] = model
-                fabric.load(checkpoint_path, state, strict=False)
+                remaining_keys = fabric.load(checkpoint_path, state, strict=False)
+                fabric.print(f"Following keys are not loaded: {remaining_keys}")
                 model = state.pop("model")
 
     # Initialize the trainer
@@ -198,6 +202,7 @@ def main(
                 model_args=model_args,
                 training_args=training_args,
                 epoch=epoch,
+                is_cross_batch_loss=is_cross_batch_loss,
             )
         fabric.barrier()
         checkpoint_path = trainer.fit_epoch(
@@ -227,7 +232,7 @@ def main(
 
 def setup(data_args: DataArguments, model_args: ModelArguments, training_args: TrainingArguments, is_alignment: bool = False, run_name: str = None):
     seed_everything(training_args.seed)
-
+    is_cross_batch_loss = None
     if is_alignment:
         print(f"Alignment training that using {PretrainingDataModule} data module") 
         train_data = PretrainingDataModule(
