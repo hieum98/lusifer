@@ -178,6 +178,4 @@ def trainable_filter(key: str, value: Any, trainable_layers: List[str]=[]) -> bo
 
 
 def clear_unused_gpu_mem():
-    for device in range(torch.cuda.device_count()):
-        with torch.cuda.device(device):
-            torch.cuda.empty_cache()
+    torch.cuda.empty_cache()

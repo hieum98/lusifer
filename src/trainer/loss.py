@@ -5,6 +5,7 @@ import torch.distributed
 import torch.nn as nn
 import torch.nn.functional as F 
 from pytorch_metric_learning import losses, miners, distances
+from pytorch_metric_learning.utils.loss_and_miner_utils import get_matches_and_diffs
 
 
 class AllGather(torch.autograd.Function):
@@ -110,7 +111,6 @@ class ContrastiveLoss:
             self.miner = miners.MultiSimilarityMiner(epsilon=0.25)
         else:
             self.miner = None
-        self.cosine_embeding_loss = nn.CosineEmbeddingLoss(margin=0.1, reduction='mean')
 
     def __call__(
             self, 
@@ -161,23 +161,31 @@ class ContrastiveLoss:
                 loss = self.loss_fn(full_embeds, full_labels)
             loss = loss * world_size # scale the loss to account for the same global batch size
         else:
-            q_embeds = einops.repeat(q_embeds, 'b d -> b n d', n=pos_embeds.size(1) + neg_embeds.size(1))
-            candidate_embeds = torch.cat([pos_embeds, neg_embeds], dim=1) # (batch_size, num_pos + num_neg, embed_dim)
-            # labels: 1 for positive samples, -1 for negative samples
+            full_embeds = torch.cat([q_embeds.unsqueeze(1), pos_embeds, neg_embeds], dim=1) # (batch_size, 1 + num_pos + num_neg, embed_dim)
+            max_idx = torch.max(q_labels) #
+            neg_labels = torch.arange(neg_embeds.size(0)*neg_embeds.size(1), device=neg_embeds.device) + max_idx + 1
+            neg_labels = einops.rearrange(neg_labels, '(b n) -> b n', b=neg_embeds.size(0))
             labels = torch.cat([
-                torch.ones(pos_embeds.shape[:-1], device=pos_embeds.device, dtype=torch.long), # (bs, num_pos)
-                -1*torch.ones(neg_embeds.shape[:-1], device=neg_embeds.device, dtype=torch.long), # (bs, num_neg)
-            ], dim=1) # (batch_size, num_pos + num_neg)
-            # shuffle the candidate_embeds and labels to avoid the trivial solution
-            random_indices = torch.randperm(labels.size(1))
-            candidate_embeds = candidate_embeds[:, random_indices]
-            labels = labels[:, random_indices]
+                q_labels.unsqueeze(1), # (batch_size, 1)
+                einops.repeat(q_labels, 'b -> b n', n=pos_embeds.size(1)), # (batch_size, num_pos)
+                neg_labels, # (batch_size, num_neg)
+            ], dim=1) # (batch_size, 1 + num_pos + num_neg)
+            labels = einops.rearrange(labels, 'b n -> (b n)')
+            matches, diffs = get_matches_and_diffs(labels) # (batch_size * (1 + num_pos + num_neg), batch_size * (1 + num_pos + num_neg))
+            # Only compule loss for (q, p, n) pairs that was predefined rather than all possible pairs in the batch
+            valid_pairs = torch.arange(full_embeds.size(0), device=full_embeds.device) # (batch_size,)
+            valid_pairs = einops.repeat(valid_pairs, 'b -> b n', n=full_embeds.size(1)) # (batch_size, 1 + num_pos + num_neg)
+            valid_pairs = einops.rearrange(valid_pairs, 'b n -> (b n)')
+            valid_pairs = (valid_pairs.unsqueeze(1) == valid_pairs.unsqueeze(0)).byte() # (batch_size * (1 + num_pos + num_neg), batch_size * (1 + num_pos + num_neg))
+            matches = matches * valid_pairs
+            diffs = diffs * valid_pairs
+            a1_idx, p_idx = torch.where(matches)
+            a2_idx, n_idx = torch.where(diffs)
+            indices_tuple = (a1_idx, p_idx, a2_idx, n_idx)
 
-            q_embeds = einops.rearrange(q_embeds, 'b n d -> (b n) d')
-            candidate_embeds = einops.rearrange(candidate_embeds, 'b n d -> (b n) d')
-            labels = einops.rearrange(labels, 'b n -> (b n)') # (batch_size * (num_pos + num_neg),)
+            full_embeds = einops.rearrange(full_embeds, 'b n d -> (b n) d')
 
-            loss = self.cosine_embeding_loss(q_embeds, candidate_embeds, labels)
+            loss = self.loss_fn(full_embeds, indices_tuple=indices_tuple)
 
         return loss
 

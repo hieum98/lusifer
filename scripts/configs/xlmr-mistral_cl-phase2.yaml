@@ -6,7 +6,7 @@ langs:
 max_seq_length: 512
 neg_per_sample: 64
 num_workers: 8
-number_training_samples: 2000
+number_training_samples: 200
 pos_per_sample: 3
 use_retrieval_data_only: false
 
@@ -31,9 +31,9 @@ checkpoint_dir: output/xlm-mistral-cl-phase2.test1
 checkpoint_file: output/xlm-mistral-cl-phase1/lastest.ckpt
 checkpoint_interval: 500
 devices: 4
-eval_batch_size: 64
-gc_chunk_size: 2
-global_batch_size: 32
+eval_batch_size: 128
+gc_chunk_size: 1
+global_batch_size: 16
 grad_norm_clip: null
 is_alignment: false
 is_distance: true

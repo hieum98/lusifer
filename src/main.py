@@ -23,7 +23,6 @@ from src.data_modules.rep_learning_datamodule import RepLearningDataModule, get_
 from src.data_modules.pretraining_datamodule import PretrainingDataModule, get_dataloaders as get_pretraining_dataloaders
 from src.models.lusifer import Lusifer, WrappedLusifer
 from src.models.utils import get_wrapping_policy, get_activation_checkpointing_policy
-from src.trainer.supervised_trainer import SupervisedTrainer
 from src.trainer.gradcache_trainer import GradCacheTrainer
 from src.trainer.alignment_trainer import AlignmentTrainer
 from src.args import DataArguments, ModelArguments, TrainingArguments
@@ -43,7 +42,7 @@ def main(
         model_args: ModelArguments,
         training_args: TrainingArguments,
         is_alignmnent: bool = False,
-        is_cross_batch_loss: bool = False,
+        is_cross_batch_loss: bool = True,
         ):
     fabric.seed_everything(training_args.seed)
 
@@ -95,12 +94,11 @@ def main(
             data_args=data_args,
             model_args=model_args,
             training_args=training_args,
-            is_cross_batch_loss=is_cross_batch_loss,
         )
     fabric.barrier()
 
     # Setup the optimizer and scheduler
-    if is_alignmnent or (not is_cross_batch_loss):
+    if is_alignmnent:
         num_accumulation_steps = training_args.global_batch_size // (training_args.gc_chunk_size * fabric.world_size)
         step_per_epoch = len(train_dataloader) // num_accumulation_steps
     else:
@@ -206,8 +204,8 @@ def main(
             fabric=fabric,
             num_accumulation_steps=num_accumulation_steps,
         )
-    elif is_cross_batch_loss:
-        fabric.print("Representation learning with cross-batch loss using GradCacheTrainer")
+    else:
+        fabric.print(f"Representation learning with cross batch loss is set to {is_cross_batch_loss}")
         trainer = GradCacheTrainer(
             fabric=fabric,
             loss_type=training_args.loss_type,
@@ -215,12 +213,7 @@ def main(
             is_distance=training_args.is_distance,
             use_miner=training_args.use_miner,
             chunk_size=training_args.gc_chunk_size,
-        )
-    else:
-        fabric.print("Representation learning using SupervisedTrainer")
-        trainer = SupervisedTrainer(
-            fabric=fabric,
-            num_accumulation_steps=num_accumulation_steps,
+            is_cross_batch_loss=is_cross_batch_loss,
         )
 
     current_epoch_num = state.get("epoch_num", 0)
@@ -246,7 +239,6 @@ def main(
                 model_args=model_args,
                 training_args=training_args,
                 epoch=epoch,
-                is_cross_batch_loss=is_cross_batch_loss,
             )
         fabric.barrier()
         checkpoint_path = trainer.fit_epoch(

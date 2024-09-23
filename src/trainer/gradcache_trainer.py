@@ -43,10 +43,12 @@ class GradCacheTrainer:
             is_distance: bool = True,
             use_miner: bool = False,
             chunk_size: Optional[int] = 1,
+            is_cross_batch_loss: bool = True,
             ) -> None:
         self.fabric = fabric
         self.chunk_size = chunk_size
 
+        self.is_cross_batch_loss = is_cross_batch_loss
         self.loss_fn = ContrastiveLoss(
             loss_type=loss_type,
             temperature=temperature,
@@ -292,6 +294,7 @@ class GradCacheTrainer:
         """
         # Split input into chunks
         enable_cross_batch_negative_sampling = batch.pop('enable_cross_batch_negative_sampling', True)
+        enable_cross_batch_negative_sampling = enable_cross_batch_negative_sampling and self.is_cross_batch_loss
         splitted_inputs = split_input(batch, self.chunk_size)
 
         # Forward pass for each chunk
