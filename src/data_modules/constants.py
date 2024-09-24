@@ -420,16 +420,15 @@ EN_CROSS_BATCH = [
     'Hieuman/Arguana', 'Hieuman/CQADupStack', 'Hieuman/DBPedia', 'Hieuman/Fever', 
     'Hieuman/FiQA', 'Hieuman/HotpotQA', 'Hieuman/MSMarco', 'Hieuman/NFCorpus', 
     'Hieuman/NQ', 'Hieuman/Quora', 'Hieuman/SciDocs', 'Hieuman/SciFact', 'Hieuman/TREC-COVID', 
-    'Hieuman/Touche2020', 'Hieuman/20NewsGroups', 'Hieuman/en_MIRACL', 'Hieuman/en_MrTidy',
+    'Hieuman/Touche2020',  'Hieuman/en_MIRACL', 'Hieuman/en_MrTidy',
     'Hieuman/PQA', 'Hieuman/PubMedQA', 'Hieuman/snli', 'Hieuman/SQuAD', 'Hieuman/STS'
     ]
 
 EN_NON_CROSS_BATCH = [
-    'Hieuman/Amazon-Counterfactual', 'Hieuman/Amazon-Review', 'Hieuman/ArxivP2P', 'Hieuman/ArxivS2S',
-    'Hieuman/Banking77', 'Hieuman/biorxivP2P', 'Hieuman/biorxivS2S', 'Hieuman/Emotion',
-    'Hieuman/imdb', 'Hieuman/medrxivP2P', 'Hieuman/medrxivS2S', 'Hieuman/MTOP-Intent',
-    'Hieuman/Reddit-clustering', 'Hieuman/StackExchange-clustering', 'Hieuman/Toxic-conversation',
-    'Hieuman/Tweet-Sentiment'
+    'Hieuman/ArxivP2P', 'Hieuman/ArxivS2S', 'Hieuman/biorxivP2P', 'Hieuman/biorxivS2S', 'Hieuman/20NewsGroups',
+    'Hieuman/medrxivP2P', 'Hieuman/medrxivS2S', 'Hieuman/Reddit-clustering', 'Hieuman/StackExchange-clustering',
+    'Hieuman/Amazon-Counterfactual', 'Hieuman/Amazon-Review', 'Hieuman/Banking77', 'Hieuman/Emotion',
+    'Hieuman/imdb', 'Hieuman/MTOP-Intent', 'Hieuman/Toxic-conversation', 'Hieuman/Tweet-Sentiment'
 ]
 
 AR = ['Hieuman/ar_MIRACL', 'Hieuman/ar_MrTidy']

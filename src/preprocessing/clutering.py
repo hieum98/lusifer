@@ -109,35 +109,35 @@ if __name__=='__main__':
     # Update the dataset to hub
     dataset.push_to_hub(args.dataset, private=False)
 
-    # Reduce the data by using the cluster
-    cluster = set(dataset['cluster'])
-    if len(dataset) > number_data:
-        example_per_cluster = math.ceil(number_data / len(cluster))
-        cluster_with_id = dataset.map(lambda example, idx: {'id': idx, 'cluster': example['cluster']}, with_indices=True, num_proc=num_proc, remove_columns=dataset.column_names)
-        cluster_with_id = cluster_with_id.to_pandas()
-        # group by cluster
-        cluster_with_id = cluster_with_id.groupby('cluster')['id'].apply(list).reset_index()
-        cluster_with_id = cluster_with_id.to_dict(orient='records')
+    # # Reduce the data by using the cluster
+    # cluster = set(dataset['cluster'])
+    # if len(dataset) > number_data:
+    #     example_per_cluster = math.ceil(number_data / len(cluster))
+    #     cluster_with_id = dataset.map(lambda example, idx: {'id': idx, 'cluster': example['cluster']}, with_indices=True, num_proc=num_proc, remove_columns=dataset.column_names)
+    #     cluster_with_id = cluster_with_id.to_pandas()
+    #     # group by cluster
+    #     cluster_with_id = cluster_with_id.groupby('cluster')['id'].apply(list).reset_index()
+    #     cluster_with_id = cluster_with_id.to_dict(orient='records')
 
-        # get the examples
-        selected_index = []
-        for clus in cluster_with_id:
-            in_cluster_index = clus['id']
-            in_cluster_index = random.sample(in_cluster_index, min(len(in_cluster_index), example_per_cluster))
-            selected_index.extend(in_cluster_index)
+    #     # get the examples
+    #     selected_index = []
+    #     for clus in cluster_with_id:
+    #         in_cluster_index = clus['id']
+    #         in_cluster_index = random.sample(in_cluster_index, min(len(in_cluster_index), example_per_cluster))
+    #         selected_index.extend(in_cluster_index)
         
-        if len(selected_index) < number_data:
-            all_data_index = list(range(len(dataset)))
-            random.shuffle(all_data_index)
-            for idx in all_data_index:
-                if idx not in selected_index:
-                    selected_index.append(idx)
-                if len(selected_index) >= number_data:
-                    break
+    #     if len(selected_index) < number_data:
+    #         all_data_index = list(range(len(dataset)))
+    #         random.shuffle(all_data_index)
+    #         for idx in all_data_index:
+    #             if idx not in selected_index:
+    #                 selected_index.append(idx)
+    #             if len(selected_index) >= number_data:
+    #                 break
         
-        dataset = dataset.select(selected_index)
-        # Update the dataset to hub
-        name = f'{args.dataset}-reduced'
-        dataset.push_to_hub(name, private=False)
+    #     dataset = dataset.select(selected_index)
+    #     # Update the dataset to hub
+    #     name = f'{args.dataset}-reduced'
+    #     dataset.push_to_hub(name, private=False)
 
     

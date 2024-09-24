@@ -25,6 +25,7 @@ class WrappedHFModel(nn.Module):
             languages=None,
         )
         self.model_name_or_path = model_name_or_path
+        print(f"Loading model: {model_name_or_path}")
         if model_name_or_path == 'izhx/udever-bloom-7b1':
             from transformers import BloomModel
             self.model = BloomModel.from_pretrained('izhx/udever-bloom-7b1', trust_remote_code=True)
