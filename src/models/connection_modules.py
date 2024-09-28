@@ -32,5 +32,6 @@ class FFWithAddedTokens(nn.Module):
             if self.num_added_tokens > 0:
                 added_tokens = einops.repeat(self.added_tokens, 'n d -> b n d', b=x.size(0))
                 x = torch.cat([x, added_tokens], dim=1) # (b, n + n_a, d)
+            x = x.to(dtype=self.dtype)
         return x
 
