@@ -96,8 +96,8 @@ class RepLearningDataset(Dataset):
         example = self.data[idx]
         pos = self.rng.sample(example['positive'], min(len(example['positive']), self.pos_per_sample))
         neg = self.rng.sample(example['negative'], min(len(example['negative']), self.neg_per_sample))
-        assert len(pos) > 0, "At least one positive example per sample. Please check the data {}".format(self.data_name)
-        assert len(neg) > 0, "At least one negative example per sample. Please check the data {}".format(self.data_name)
+        assert len(pos) > 0, "At least one positive example per sample, got {} in idx {}. Please check the data {}".format(example, idx, self.data_name)
+        assert len(neg) > 0, "At least one negative example per sample, got {} in idx {}. Please check the data {}".format(example, idx, self.data_name)
         return {
             'query_label': idx,
             'query': example['query'], # str

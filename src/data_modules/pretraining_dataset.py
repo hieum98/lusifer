@@ -81,13 +81,20 @@ class PretrainingCollator:
             lm_special_tokens: Dict[str, str],
             max_seq_length: int=512,
             label_pad_token_id: int=-100,
+            mask_probability: float=0.15,
             ):
         self.universal_learner_tokenizer = universal_learner_tokenizer
         self.lm_tokenizer = lm_tokenizer
+        # Check if mask token is in the tokenizer else add it as a special token
+        if self.lm_tokenizer.mask_token is None:
+            self.lm_tokenizer.mask_token = self.lm_tokenizer.unk_token
+            self.lm_tokenizer.mask_token_id = self.lm_tokenizer.unk_token_id
+
         universal_learner_bos = universal_learner_special_tokens.get("bos", "")
         universal_learner_eos = universal_learner_special_tokens.get("eos", "")
         self.universal_learner_format = universal_learner_bos + "{instruction}." + "\n{example}"  + universal_learner_eos
         self.lm_format = lm_special_tokens.get("bos", "") + "{text}" + lm_special_tokens.get("eos", "")
+        self.mask_probability = mask_probability
 
         self.max_seq_length = max_seq_length
         self.label_pad_token_id = label_pad_token_id
@@ -119,12 +126,26 @@ class PretrainingCollator:
             add_special_tokens=False, # special tokens are already added
             return_tensors='pt'
             )
+        # Masking
+        lm_input_ids = lm_encodings['input_ids']
+        attention_mask = lm_encodings['attention_mask']
+        labels = lm_input_ids.clone()
+        padding_indices = attention_mask == 0
+        labels[padding_indices] = self.label_pad_token_id
+        if self.mask_probability > 0.0:
+            masked_indices_for_attention = torch.rand(lm_input_ids.shape) < self.mask_probability
+            attention_mask[masked_indices_for_attention] = 0
+            masked_indices_for_input = torch.rand(lm_input_ids.shape) < self.mask_probability
+            # ignore padding indices
+            masked_indices_for_input[padding_indices] = False
+            lm_input_ids[masked_indices_for_input] = self.lm_tokenizer.mask_token_id
 
         return {
             'universal_learner_input_ids': universal_learner_encodings['input_ids'], # (b, l)
             'universal_learner_attention_mask': universal_learner_encodings['attention_mask'], # (b, l)
-            'lm_input_ids': lm_encodings['input_ids'], # (b, l)
-            'lm_attention_mask': lm_encodings['attention_mask'], # (b, l)
+            'lm_input_ids': lm_input_ids, # (b, l)
+            'lm_attention_mask': attention_mask, # (b, l)
+            'lm_labels': labels, # (b, l)
         }
     
 

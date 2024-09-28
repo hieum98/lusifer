@@ -17,6 +17,7 @@ class PretrainingDataModule(L.LightningDataModule):
             num_workers: int = 4,
             is_reconstruct: bool = True,
             is_query_positive_alignment: bool = False,
+            mask_probability: float = 0.15,
             seed: int = 777
             ):
         super().__init__()
@@ -29,6 +30,7 @@ class PretrainingDataModule(L.LightningDataModule):
             self.data_names = PRETRAINING_PASSAGE2QUERY + PRETRAINING_QUERY2PASSAGE
         
         self.data_names.sort()
+        self.mask_probability = mask_probability
         self.num_workers = num_workers
         self.seed = seed
 
@@ -95,6 +97,7 @@ class PretrainingDataModule(L.LightningDataModule):
             universal_learner_special_tokens=self.universal_learner_special_tokens_set,
             lm_special_tokens=self.lm_special_tokens_set,
             max_seq_length=self.max_seq_length,
+            mask_probability=self.mask_probability,
         )
         sampler = DistributedSampler(
             self.train_ds,

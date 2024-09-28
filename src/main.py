@@ -75,6 +75,11 @@ def main(
     fabric.print("Model after wrapping")
     fabric.print(model)
 
+    # setup evaluation method for the model
+    model.mark_forward_method("encode")
+    model.mark_forward_method("encode_queries")
+    model.mark_forward_method("encode_corpus")
+
     # Prepare the dataloaders
     if is_alignmnent:
         train_dataloader = get_pretraining_dataloaders(
@@ -161,13 +166,15 @@ def main(
 
     # Evaluate the initial model
     if fabric.global_rank == 0:
-        model_hprams = model.hprams
         _model_revision = f"{training_args.model_revision}_initial"
+        model_hprams = model.hprams
         eval_model = WrappedLusifer(
             model_revision=_model_revision, 
             model_checkpoint=checkpoint_path,
             **model_hprams
             )
+        # model.set_model_revision(_model_revision)
+        # eval_model = model
         mteb_results = eval_mteb(
             model=eval_model,
             output_folder=training_args.checkpoint_dir,
@@ -176,7 +183,7 @@ def main(
         )
         multilingual_results = eval_multilingual(
             model=eval_model,
-            langs=['en', 'ru', 'vi', 'zh'],
+            langs=['ru', 'vi', 'fa', 'hi', 'bn', 'yo'],
             output_folder=training_args.checkpoint_dir,
             batch_size=training_args.eval_batch_size,
             is_quick_run=True,
@@ -275,7 +282,8 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
             is_reconstruct=data_args.is_reconstruct,
             is_query_positive_alignment=data_args.is_query_positive_alignment,
             num_workers=data_args.num_workers,
-            seed=training_args.seed
+            seed=training_args.seed,
+            mask_probability=data_args.mask_probability,
         )
     else:
         print(f"Representation learning training that using {RepLearningDataModule} data module")
@@ -388,6 +396,12 @@ if __name__ == "__main__":
         "--gc_chunk_size", type=int, default=None, help="Gradient cache chunk size"
     )
     parser.add_argument(
+        "--mask_probability", type=float, default=None, help="Mask probability"
+    )
+    parser.add_argument(
+        "--num_added_tokens", type=int, default=None, help="Number of added tokens"
+    )
+    parser.add_argument(
         "--learning_rate", type=float, default=None, help="Learning rate"
     )
     parser.add_argument(
@@ -420,6 +434,8 @@ if __name__ == "__main__":
     training_args.checkpoint_dir = args.checkpoint_dir if args.checkpoint_dir is not None else training_args.checkpoint_dir
     training_args.checkpoint_file = args.checkpoint_file if args.checkpoint_file is not None else training_args.checkpoint_file
     training_args.only_load_model = args.only_load_model
+    data_args.mask_probability = args.mask_probability if args.mask_probability is not None else data_args.mask_probability
+    model_args.num_added_tokens = args.num_added_tokens if args.num_added_tokens is not None else model_args.num_added_tokens
 
     config_file_path = Path(training_args.checkpoint_dir) / "config.yaml"
     config_file_path.parent.mkdir(parents=True, exist_ok=True)

@@ -36,6 +36,10 @@ class DataArguments:
         default=1,
         metadata={"help": "The number of positive samples per sample."}
     )
+    mask_probability: float = field(
+        default=0.0, # no masking
+        metadata={"help": "The mask probability."}
+    )
     num_workers: int = field(
         default=0,
         metadata={"help": "Number of workers to use for data loading"}
