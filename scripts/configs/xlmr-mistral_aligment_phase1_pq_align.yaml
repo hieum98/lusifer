@@ -4,7 +4,7 @@ langs:
 is_reconstruct: false
 is_query_positive_alignment: true
 max_seq_length: 512
-number_training_samples: 500_000
+number_training_samples: 1000
 neg_per_sample: 32
 pos_per_sample: 3
 num_workers: 8
@@ -31,9 +31,9 @@ is_alignment: true
 seed: 777
 model_revision: 'xlm-mistral-alignment-phase1'
 # Training strategy args
-precision: 'bf16-mixed'
+precision: 'bf16-mixed' # Need to keep -mixed for mixed precision and compatibility with the peft library
 strategy: 'fsdp'
-sharding_strategy: 'full_shard'
+sharding_strategy: 'shard_grad_op'
 activation_checkpointing: True
 use_cpu_offload: False
 quantization: False
@@ -49,7 +49,7 @@ max_epochs: 5
 max_steps: 10000
 weight_decay: 0.0
 warmpup_proportion: 0.1
-# grad_norm_clip: 1.0 # Not configured, default is None
+grad_norm_clip: null # Not configured, default is None
 # Checkpoint args
 checkpoint_interval: 1000
 logger_type: 'wandb'

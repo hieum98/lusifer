@@ -48,7 +48,7 @@ max_epochs: 2
 max_steps: 100000
 weight_decay: 0.0
 warmpup_proportion: 0.1
-# grad_norm_clip: 1.0 # Not configured, default is None
+grad_norm_clip: null # Not configured, default is None
 # Checkpoint args
 checkpoint_interval: 500
 logger_type: 'wandb'
