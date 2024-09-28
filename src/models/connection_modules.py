@@ -23,6 +23,7 @@ class FFWithAddedTokens(nn.Module):
         )
         self.num_added_tokens = num_added_tokens
         if num_added_tokens > 0:
+            print(f'Adding {num_added_tokens} trainable tokens to FFWithAddedTokens')
             self.added_tokens = nn.Parameter(torch.randn(num_added_tokens, out_dim))
     
     def forward(self, x, **kwargs):

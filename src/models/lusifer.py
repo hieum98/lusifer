@@ -332,6 +332,7 @@ class Lusifer(nn.Module):
             prompt_length: Optional[torch.Tensor] = None, # (batch_size)
             llm_input_ids: Optional[torch.Tensor] = None, # (batch_size, seq_len)
             llm_attention_mask: Optional[torch.Tensor] = None, # (batch_size, seq_len)
+            lm_labels: Optional[torch.Tensor] = None, # (batch_size, seq_len)
             is_encoding: Optional[bool] = True,
     ):  
         universal_representation = self.universal_learner(
@@ -345,7 +346,7 @@ class Lusifer(nn.Module):
         if is_encoding:
             if self.encoder_backbone_type == 'nvidia/NV-Embed-v2':
                 autocast_ctx = torch.autocast if torch.cuda.is_available() else nullcontext
-                with autocast_ctx('cuda'):
+                with autocast_ctx(device_type=universal_representation.device.type, dtype=self.model_dtype):
                     outputs = self.encoder.embedding_model(
                         input_ids=None, 
                         inputs_embeds=universal_representation,
@@ -380,9 +381,11 @@ class Lusifer(nn.Module):
                     projected_representation = self.output_projection(sentence_representation) # (batch_size, hidden_size)
                 return {'reps': sentence_representation, 'projection': projected_representation}
         else:
-            assert llm_input_ids.size(0) == input_ids.size(0), "The batch size of llm_input_ids and input_ids must be the same"
+            if lm_labels is None:
+                lm_labels = llm_input_ids.clone()
+            assert lm_labels.size(0) == input_ids.size(0), "The batch size of lm_labels and input_ids must be the same"
             embeddings = self.encoder.model.get_input_embeddings()(llm_input_ids)
-            if all(llm_input_ids[:, 0] == self.encoder.config.bos_token_id):
+            if all(lm_labels[:, 0] == self.encoder.config.bos_token_id):
                 # move the bos token to the first position
                 embeddings = torch.cat(
                     [embeddings[:, :1], universal_representation, embeddings[:, 1:]], dim=1
@@ -393,15 +396,14 @@ class Lusifer(nn.Module):
                 ) # (batch_size, seq_len)
                 universal_labels = torch.zeros((universal_representation.size(0), universal_representation.size(1)), device=universal_representation.device, dtype=input_ids.dtype) + -100
                 labels = torch.cat(
-                    [llm_input_ids[:, :1], universal_labels, llm_input_ids[:, 1:]], dim=1
+                    [lm_labels[:, :1], universal_labels, lm_labels[:, 1:]], dim=1
                 )
             else:
                 embeddings = torch.cat([universal_representation, embeddings], dim=1)
                 assert attention_mask.size(1) == universal_representation.size(1), f"Attn mask size should match with universal representation size. Got {attention_mask.size()} and {universal_representation.size()}"
                 attn_mask = torch.cat([attention_mask, llm_attention_mask], dim=1)
                 universal_labels = torch.zeros((universal_representation.size(0), universal_representation.size(1)), device=universal_representation.device, dtype=input_ids.dtype) + -100
-                labels = torch.cat([universal_labels, llm_input_ids], dim=1)
-            
+                labels = torch.cat([universal_labels, lm_labels], dim=1)
             llm_outputs = self.encoder(
                 input_ids=None,
                 attention_mask=attn_mask,

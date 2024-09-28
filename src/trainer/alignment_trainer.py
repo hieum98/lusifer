@@ -33,6 +33,7 @@ class AlignmentTrainer:
         universal_learner_attention_mask = batch['universal_learner_attention_mask'] 
         lm_input_ids = batch['lm_input_ids'] # (bs, output_len)
         lm_attention_mask = batch['lm_attention_mask']
+        lm_labels = batch['lm_labels'] # (bs, output_len)
 
         # forward pass
         loss = model(
@@ -40,6 +41,7 @@ class AlignmentTrainer:
             attention_mask=universal_learner_attention_mask,
             llm_input_ids=lm_input_ids,
             llm_attention_mask=lm_attention_mask,
+            lm_labels=lm_labels,
             is_encoding=False
         )['loss']
         return loss
