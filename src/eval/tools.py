@@ -1,6 +1,135 @@
 import json
+import os
 import pathlib
+from typing import List
+import mteb
+import numpy as np
 import pandas as pd
+
+from src.eval.constants import LANG_TO_CODES, MTEB_DS_TO_PROMPT, MULTILINGUAL_DS_TO_PROMPT, QUICK_EVAL
+
+
+def get_eval_mteb_dataset(
+        mteb_model_meta: mteb.ModelMeta,
+        dataset_name: str,
+        langs: List[str],
+        output_folder: str='results',
+        aggregation=np.mean,
+):  
+    print(f"Getting results for {dataset_name} in {langs}")
+    
+    task = mteb.get_task(task_name=dataset_name, languages=langs)
+    task_name = task.metadata.name
+    langs = task.languages
+
+    model_path_name = mteb_model_meta.model_name_as_path()
+    model_revision = mteb_model_meta.revision
+    results_path = pathlib.Path(output_folder) / model_path_name / model_revision / f'{task_name}.json'
+    if results_path.exists():
+        print(f"Loading results from {results_path}")
+        results = mteb.MTEBResults.from_disk(results_path)
+    else:
+        results = None
+    all_results = {}
+    for lang in langs:
+        try:
+            test_result_lang = results.get_score(
+                languages=[lang],
+                aggregation=aggregation,
+            )
+        except Exception as e:
+            print(f"Error in getting results for {lang} in {dataset_name}")
+            test_result_lang = 0.0
+        all_results[lang] = test_result_lang
+
+    print(f"Results for {dataset_name}: {all_results}")
+    return all_results
+
+
+def get_eval_mteb(
+        mteb_model_meta: mteb.ModelMeta,
+        output_folder: str='results',
+        is_quick_run: bool=False,
+):  
+    langs = ['eng']
+    results = {
+        'avg': {}
+    }
+    for task in MTEB_DS_TO_PROMPT.keys():
+        dataset_in_task = MTEB_DS_TO_PROMPT[task]
+        all_task_results = []
+        for dataset in dataset_in_task.keys():
+            if is_quick_run and dataset not in QUICK_EVAL:
+                continue
+            main_metric = get_eval_mteb_dataset(
+                dataset_name=dataset,
+                langs=langs,
+                output_folder=f"{output_folder}/{langs[0]}",
+                mteb_model_meta=mteb_model_meta,
+            )
+            results[dataset] = main_metric['eng']
+            all_task_results.append(main_metric['eng'])
+        
+        if len(all_task_results) != 0:
+            avg_task_result = sum(all_task_results) / len(all_task_results)
+            results['avg'][task] = avg_task_result
+    
+    all_results = [r for r in results.values() if isinstance(r, float)]
+    avg_result = sum(all_results) / len(all_results)
+    results['avg']['all_tasks'] = avg_result
+    print(f"Results for all tasks: {results}")
+
+    with open(os.path.join(output_folder, 'mteb_all_results.json'), 'w', encoding='utf-8') as f:
+        json.dump(results, f, indent=4)
+
+    return results
+
+
+def get_eval_multilingual(
+        mteb_model_meta: mteb.ModelMeta,
+        langs: List[str] = 'all',
+        output_folder: str='results',
+        is_quick_run: bool=False,
+):  
+    if isinstance(langs, list):
+        name = '_'.join(langs)
+    if langs == 'all':
+        langs = LANG_TO_CODES.keys()
+        name = 'all'
+    
+    all_results = {
+        'avg': {},
+    }
+    _all_results = []
+    for lang in langs:
+        datasets_in_lang = MULTILINGUAL_DS_TO_PROMPT[lang]
+        lang_codes = LANG_TO_CODES[lang]
+        all_results[lang] = {}
+        for dataset in datasets_in_lang.keys():
+            if is_quick_run and dataset not in QUICK_EVAL:
+                continue
+            main_metric = get_eval_mteb_dataset(
+                dataset_name=dataset,
+                langs=lang_codes,
+                mteb_model_meta=mteb_model_meta,
+                output_folder=f"{output_folder}/{lang_codes[0]}",
+            )
+            lang_results = [main_metric[lang_code] for lang_code in lang_codes if lang_code in main_metric]
+            assert len(lang_results) > 0, f"No results for {dataset} in {lang_codes}"
+            lang_results = sum(lang_results) / len(lang_results)
+            all_results[lang][dataset] = lang_results
+            _all_results.append(lang_results)
+        if len(all_results[lang]) != 0:
+            lang_avg_result = sum([x for x in all_results[lang].values()]) / len(all_results[lang])
+            all_results['avg'][lang] = lang_avg_result
+    
+    all_results['avg']['all_tasks'] = sum(_all_results) / len(_all_results)
+    print(f"Results for all languages: {all_results}")
+
+    with open(os.path.join(output_folder, f'{name}_results.json'), 'w', encoding='utf-8') as f:
+        json.dump(all_results, f, indent=4)
+
+    return all_results
 
 
 def read_results(result_dir: str):
@@ -73,9 +202,9 @@ def read_results(result_dir: str):
     en_results = []
     for en_data in en_datas:
         if en_data not in ['MIRACLReranking', 'MIRACLRetrieval']:
-            en_results.append([en_data, mteb_results[en_data] * 100])
+            en_results.append([en_data, mteb_results.get(en_data, 0.0) * 100])
         else:
-            en_results.append([en_data, all_results['en'][en_data] * 100])
+            en_results.append([en_data, all_results['en'].get(en_data, 0.0) * 100])
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(en_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "en_results.xlsx")

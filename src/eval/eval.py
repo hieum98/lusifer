@@ -26,7 +26,7 @@ def eval_mteb_dataset(
         output_folder: str='results',
         batch_size: int=32,
         max_length: int=512,
-        aggregation=np.max,
+        aggregation=np.mean,
 ):  
     task = mteb.get_task(task_name=dataset_name, languages=langs)
     task_name = task.metadata.name
@@ -161,7 +161,8 @@ def eval_multilingual(
                 batch_size=batch_size,
                 max_length=max_length,
             )
-            lang_results = [x for x in main_metric.values()]
+            lang_results = [main_metric[lang_code] for lang_code in lang_codes if lang_code in main_metric]
+            assert len(lang_results) > 0, f"No results for {dataset} in {lang_codes}"
             lang_results = sum(lang_results) / len(lang_results)
             all_results[lang][dataset] = lang_results
             _all_results.append(lang_results)
@@ -211,9 +212,13 @@ if __name__=='__main__':
     parser.add_argument(
         "--dataname", type=str, default=None, help="Name of the dataset to evaluate",
     )
+    parser.add_argument(
+        "--num_gpus", type=int, default=8, help="Number of GPUs to use",
+    )
 
     args = parser.parse_args()
-
+    
+    print(f"Evaluating model {args.model_name_or_path} on {args.langs} languages of {args.dataname} dataset")
     if args.model_checkpoint is not None:
         config_file = args.model_name_or_path
         model_checkpoint = args.model_checkpoint
@@ -238,6 +243,7 @@ if __name__=='__main__':
             model_dtype= torch.bfloat16,
             model_revision=training_args.model_revision,
             model_checkpoint=model_checkpoint,
+            num_gpus=args.num_gpus,
         )
     else:
         model = WrappedHFModel(
@@ -247,6 +253,7 @@ if __name__=='__main__':
     batch_size = args.batch_size * model.num_gpus if model.num_gpus > 0 else args.batch_size
 
     if args.dataname is None and (args.langs=='all' or 'all' in args.langs):
+        print("Evaluating on all MTEB datasets")
         multilingual_results = eval_multilingual(
             model=model,
             output_folder=args.output_folder,
@@ -261,7 +268,17 @@ if __name__=='__main__':
             max_length=args.max_length,
             is_quick_run=args.is_quick_run,
         )
+    elif args.dataname=='all_mteb_en':
+        print("Evaluating on all english MTEB datasets")
+        results = eval_mteb(
+            model=model,
+            output_folder=args.output_folder,
+            batch_size=batch_size,
+            max_length=args.max_length,
+            is_quick_run=args.is_quick_run,
+        )
     elif args.dataname=='exclude_mteb':
+        print("Evaluating on all MTEB datasets excluding the english ones")
         multilingual_results = eval_multilingual(
             model=model,
             output_folder=args.output_folder,
