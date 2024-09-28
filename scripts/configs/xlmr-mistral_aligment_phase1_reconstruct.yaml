@@ -6,7 +6,7 @@ langs:
 max_seq_length: 512
 neg_per_sample: 32
 num_workers: 8
-number_training_samples: 500_000
+number_training_samples: 100_000
 pos_per_sample: 3
 use_retrieval_data_only: false
 
@@ -29,7 +29,7 @@ universal_learner_name_or_path: FacebookAI/xlm-roberta-large
 activation_checkpointing: true
 checkpoint_dir: output/xlm-mistral-v0.1-align-phase1.test3
 checkpoint_file: null
-checkpoint_interval: 1000
+checkpoint_interval: 2000
 devices: 4
 eval_batch_size: 128
 gc_chunk_size: 16
