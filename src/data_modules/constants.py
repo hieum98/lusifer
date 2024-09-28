@@ -76,7 +76,17 @@ DATA = {
         'instruction': 'Classify a given Amazon customer review text as either counterfactual or not-counterfactual.',
         'enable_cross_batch_negative_sampling': False
     },
+    'Hieuman/Amazon-Counterfactual_clustering': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/amazon_counterfactual_hard_negatives.jsonl',
+        'instruction': 'Classify a given Amazon customer review text as either counterfactual or not-counterfactual.',
+        'enable_cross_batch_negative_sampling': False
+    },
     'Hieuman/Amazon-Review': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/amazon_review_hard_negatives.jsonl',
+        'instruction': 'Classify the given Amazon review into one of five rating categories: Poor, Fair, Good, Very good, Excellent.',
+        'enable_cross_batch_negative_sampling': False
+    },
+    'Hieuman/Amazon-Review_clustering': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/amazon_review_hard_negatives.jsonl',
         'instruction': 'Classify the given Amazon review into one of five rating categories: Poor, Fair, Good, Very good, Excellent.',
         'enable_cross_batch_negative_sampling': False
@@ -106,6 +116,11 @@ DATA = {
         'instruction': 'Given a online banking query, find the corresponding intents.',
         'enable_cross_batch_negative_sampling': False
     },
+    'Hieuman/Banking77_clustering': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/banking77_hard_negatives.jsonl',
+        'instruction': 'Given a online banking query, find the corresponding intents.',
+        'enable_cross_batch_negative_sampling': False
+    },
     'Hieuman/biorxivP2P': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/biorxivP2P_hard_negatives.jsonl',
         'instruction': 'Identify the category of the following passages.',
@@ -121,7 +136,17 @@ DATA = {
         'instruction': 'Classify the emotion expressed in the given Twitter message into one of the six emotions:anger, fear, joy, love, sadness, and surprise.',
         'enable_cross_batch_negative_sampling': False
     },
+    'Hieuman/Emotion_clustering': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/emotion_hard_negatives.jsonl',
+        'instruction': 'Classify the emotion expressed in the given Twitter message into one of the six emotions:anger, fear, joy, love, sadness, and surprise.',
+        'enable_cross_batch_negative_sampling': False
+    },
     'Hieuman/imdb': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/imdb_hard_negatives.jsonl',
+        'instruction': 'Classify the sentiment expressed in the given text as positive or negative.',
+        'enable_cross_batch_negative_sampling': False
+    },
+    'Hieuman/imdb_clustering': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/imdb_hard_negatives.jsonl',
         'instruction': 'Classify the sentiment expressed in the given text as positive or negative.',
         'enable_cross_batch_negative_sampling': False
@@ -150,6 +175,11 @@ DATA = {
         'instruction': 'Given a question, retrieve passages that answer the question.'
     },
     'Hieuman/MTOP-Intent': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/mtop_intent_hard_negatives.jsonl',
+        'instruction': 'Classify the intent of the given utterance in task-oriented conversation.',
+        'enable_cross_batch_negative_sampling': False
+    },
+    'Hieuman/MTOP-Intent_clustering': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/mtop_intent_hard_negatives.jsonl',
         'instruction': 'Classify the intent of the given utterance in task-oriented conversation.',
         'enable_cross_batch_negative_sampling': False
@@ -209,12 +239,22 @@ DATA = {
         'instruction': 'Classify the given comments as either toxic or not toxic.',
         'enable_cross_batch_negative_sampling': False
     },
+    'Hieuman/Toxic-conversation_clustering': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/toxic_conversations_hard_negatives.jsonl',
+        'instruction': 'Classify the given comments as either toxic or not toxic.',
+        'enable_cross_batch_negative_sampling': False
+    },
     'Hieuman/Toxic-conversation-reduced': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/toxic_conversations_hard_negatives.jsonl',
         'instruction': 'Classify the given comments as either toxic or not toxic.',
         'enable_cross_batch_negative_sampling': False
     },
     'Hieuman/Tweet-Sentiment': {
+        'data_path': '/home/hieum/uonlp/lusifer/data/en/tweet_sentiments_hard_negatives.jsonl',
+        'instruction': 'Classify the sentiment of a given tweet as either positive, negative, or neutral.',
+        'enable_cross_batch_negative_sampling': False
+    },
+    'Hieuman/Tweet-Sentiment_clustering': {
         'data_path': '/home/hieum/uonlp/lusifer/data/en/tweet_sentiments_hard_negatives.jsonl',
         'instruction': 'Classify the sentiment of a given tweet as either positive, negative, or neutral.',
         'enable_cross_batch_negative_sampling': False
@@ -428,7 +468,10 @@ EN_NON_CROSS_BATCH = [
     'Hieuman/ArxivP2P', 'Hieuman/ArxivS2S', 'Hieuman/biorxivP2P', 'Hieuman/biorxivS2S', 'Hieuman/20NewsGroups',
     'Hieuman/medrxivP2P', 'Hieuman/medrxivS2S', 'Hieuman/Reddit-clustering', 'Hieuman/StackExchange-clustering',
     'Hieuman/Amazon-Counterfactual', 'Hieuman/Amazon-Review', 'Hieuman/Banking77', 'Hieuman/Emotion',
-    'Hieuman/imdb', 'Hieuman/MTOP-Intent', 'Hieuman/Toxic-conversation', 'Hieuman/Tweet-Sentiment'
+    'Hieuman/imdb', 'Hieuman/MTOP-Intent', 'Hieuman/Toxic-conversation', 'Hieuman/Tweet-Sentiment',
+    # 'Hieuman/Amazon-Counterfactual_clustering', 'Hieuman/Amazon-Review_clustering', 
+    # 'Hieuman/Banking77_clustering', 'Hieuman/Emotion_clustering', 'Hieuman/imdb_clustering', 
+    # 'Hieuman/MTOP-Intent_clustering', 'Hieuman/Toxic-conversation_clustering', 'Hieuman/Tweet-Sentiment_clustering'
 ]
 
 AR = ['Hieuman/ar_MIRACL', 'Hieuman/ar_MrTidy']
