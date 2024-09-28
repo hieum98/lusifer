@@ -159,7 +159,7 @@ class AlignmentTrainer:
                     )
                     multilingual_results = eval_multilingual(
                         model=eval_model,
-                        langs=['en', 'ru', 'vi', 'zh'],
+                        langs=['ru', 'vi', 'fa', 'hi', 'bn', 'yo'],
                         output_folder=checkpoint_dir,
                         batch_size=eval_batch_size,
                         is_quick_run=True,

@@ -450,26 +450,25 @@ LANG_TO_CODES = {
 
 QUICK_EVAL = [
     # Classification
-    # "Banking77Classification",
-    "EmotionClassification",
+    'AmazonReviewsClassification',
+    'RuReviewsClassification',
+    'MultilingualSentimentClassification',
+    'SIB200Classification',
+    'BengaliDocumentClassification',
     # Clustering
-    "MedrxivClusteringS2S",
-    "TERRa",
-    # PairClassification
-    # "TwitterSemEval2015",
+    'MedrxivClusteringS2S',
+    'TERRa',
+    'SIB200ClusteringS2S',
     # Reranking
-    "AskUbuntuDupQuestions",
+    'AskUbuntuDupQuestions',
+    'WikipediaRerankingMultilingual',
     # Retrieval
     "ArguAna",
-    # "NFCorpus",
-    # "SciFact",
-    'MintakaRetrieval',
-    'BelebeleRetrieval',
+    "RuBQRetrieval",
+    "VieQuADRetrieval",
+    "WikipediaRetrievalMultilingual"
     # STS
-    # "BIOSSES",
-    # "STSBenchmark",
     "STS22",
-    # Summarization
-    # "SummEval",
+    'IndicCrosslingualSTS',
 ]
 
