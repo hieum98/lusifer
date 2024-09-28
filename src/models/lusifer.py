@@ -25,8 +25,6 @@ from src.models.bidirectional_modelings.modeling_bidirectional_llama import Bidi
 from src.models.bidirectional_modelings.modeling_bidirectional_phi3 import BidirectionalPhi3ForCausalLM
 from src.models.bidirectional_modelings.modeling_bidirectional_phi import BidirectionalPhiForCausalLM
 from src.models.bidirectional_modelings.modeling_bidirectional_qwen2 import BidirectionalQwen2ForCausalLM
-from src.models.bidirectional_modelings.modeling_bidirectional_cohere import BidirectionalCohereForCausalLM
-from src.models.bidirectional_modelings.modeling_bidirectional_gemma import BidirectionalGemmaForCausalLM
 from src.models.bidirectional_modelings.modeling_bidirectional_gemma2 import BidirectionalGemma2ForCausalLM
 from src.models.connection_modules import FFWithAddedTokens
 from src.special_tokens import SPECIAL_TOKENS
@@ -72,12 +70,21 @@ class Lusifer(nn.Module):
             'attn_implementation': attn_implementation,
             'model_dtype': model_dtype,
         }
+
+        self.mteb_model_meta = mteb.ModelMeta(
+            name='Lusifer',
+            revision='dev',
+            release_date=date.today().strftime("%Y-%m-%d"),
+            languages=None,
+        )
         
         self.tokenizer = self.create_tokenizer(universal_learner_name_or_path)
         self.encoder_tokenizer = self.create_tokenizer(encoder_name_or_path)
+        self.special_tokens = SPECIAL_TOKENS[universal_learner_backbone_type]
 
         if attn_implementation == "flash_attention_2":
             model_dtype = torch.bfloat16
+            self.model_dtype = model_dtype
 
         self.universal_learner = self.create_transformer(
             model_name_or_path=universal_learner_name_or_path,
@@ -134,9 +141,9 @@ class Lusifer(nn.Module):
             raise NotImplementedError(f"Connection type {connection_type} not implemented")
 
         self.output_projection = nn.Sequential(
-            nn.Linear(self.encoder_dim, self.encoder_dim, dtype=model_dtype),
+            nn.Linear(self.encoder_dim, self.encoder_dim),
             nn.ReLU(),
-            nn.Linear(self.encoder_dim, self.encoder_dim, dtype=model_dtype),
+            nn.Linear(self.encoder_dim, self.encoder_dim),
         )
     
     def create_tokenizer(self, model_name_or_path: str):
@@ -225,10 +232,6 @@ class Lusifer(nn.Module):
                 model_class = BidirectionalPhiForCausalLM
             elif backbone_type == "qwen2":
                 model_class = BidirectionalQwen2ForCausalLM
-            elif backbone_type == "cohere":
-                model_class = BidirectionalCohereForCausalLM
-            elif backbone_type == "gemma":
-                model_class = BidirectionalGemmaForCausalLM
             elif backbone_type == 'gemma2':
                 model_class = BidirectionalGemma2ForCausalLM
             elif backbone_type == 'nvidia/NV-Embed-v2':
@@ -339,7 +342,6 @@ class Lusifer(nn.Module):
         ).hidden_states[-1] # (batch_size, seq_len, hidden_size)
         universal_representation = self.connection_module(universal_representation, attention_mask=attention_mask)
         attention_mask = self.construct_input_attn_mask(attention_mask)
-
         if is_encoding:
             if self.encoder_backbone_type == 'nvidia/NV-Embed-v2':
                 autocast_ctx = torch.autocast if torch.cuda.is_available() else nullcontext
@@ -374,8 +376,8 @@ class Lusifer(nn.Module):
                     ) # (batch_size, hidden_size)
                 else:
                     raise NotImplementedError(f"Connection type {self.connection_type} not implemented")
-
-                projected_representation = self.output_projection(sentence_representation) # (batch_size, hidden_size)
+                with torch.autocast(device_type=sentence_representation.device.type, dtype=self.model_dtype):
+                    projected_representation = self.output_projection(sentence_representation) # (batch_size, hidden_size)
                 return {'reps': sentence_representation, 'projection': projected_representation}
         else:
             assert llm_input_ids.size(0) == input_ids.size(0), "The batch size of llm_input_ids and input_ids must be the same"
@@ -386,14 +388,9 @@ class Lusifer(nn.Module):
                     [embeddings[:, :1], universal_representation, embeddings[:, 1:]], dim=1
                 ) # (batch_size, seq_len, hidden_size)
                 assert attention_mask.size(1) == universal_representation.size(1), f"Attn mask size should match with universal representation size. Got {attention_mask.size()} and {universal_representation.size()}"
-                # ARR Masking
                 attn_mask = torch.cat(
                     [llm_attention_mask[:, :1], attention_mask, llm_attention_mask[:, 1:]], dim=1
                 ) # (batch_size, seq_len)
-                # # Full Masking
-                # attn_mask = torch.cat(
-                #     [llm_attention_mask[:, :1], attention_mask, torch.zeros_like(llm_attention_mask[:, 1:])], dim=1
-                # )
                 universal_labels = torch.zeros((universal_representation.size(0), universal_representation.size(1)), device=universal_representation.device, dtype=input_ids.dtype) + -100
                 labels = torch.cat(
                     [llm_input_ids[:, :1], universal_labels, llm_input_ids[:, 1:]], dim=1
@@ -401,10 +398,7 @@ class Lusifer(nn.Module):
             else:
                 embeddings = torch.cat([universal_representation, embeddings], dim=1)
                 assert attention_mask.size(1) == universal_representation.size(1), f"Attn mask size should match with universal representation size. Got {attention_mask.size()} and {universal_representation.size()}"
-                # ARR Masking
                 attn_mask = torch.cat([attention_mask, llm_attention_mask], dim=1)
-                # # Full Masking
-                # attn_mask = torch.cat([attention_mask, torch.zeros_like(llm_attention_mask)], dim=1)
                 universal_labels = torch.zeros((universal_representation.size(0), universal_representation.size(1)), device=universal_representation.device, dtype=input_ids.dtype) + -100
                 labels = torch.cat([universal_labels, llm_input_ids], dim=1)
             
@@ -418,6 +412,89 @@ class Lusifer(nn.Module):
             )
             loss = llm_outputs.loss
             return {'loss': loss}
+
+    def tokenize_example(
+            self, 
+            example: Tuple[str, str],
+            is_query: bool = True,
+            max_length: int = 512,
+    ) -> BatchEncoding:
+        bos = self.special_tokens.get("bos", "")
+        eos = self.special_tokens.get("eos", "")
+        query_prompt = bos + "{instruction}."
+        query_format = bos + "{instruction}." + "\n{example}" + eos
+        candidate_prompt = bos + "{instruction}. Candidate:" + "\n"
+        candidate_format = bos + "{instruction}. Candidate:" + "\n" + "{example}" + eos
+        if is_query:
+            emb_prompt = query_prompt.format(instruction=example[0])
+            emb_example = query_format.format(instruction=example[0], example=example[1])
+        else:
+            emb_prompt = candidate_prompt.format(instruction=example[0])
+            emb_example = candidate_format.format(instruction=example[0], example=example[1])
+        model_inputs = self.tokenizer(
+            text=emb_example,
+            max_length=max_length,
+            truncation=True,
+            padding=False,
+            return_tensors=None,
+            add_special_tokens=False if self.special_tokens!={} else True, # already added
+        )
+        prompt_length = len(self.tokenizer.tokenize(emb_prompt))
+        model_inputs['prompt_length'] = prompt_length
+        return model_inputs
+    
+    def encode(
+        self,
+        sentences: Union[List[str], str],
+        is_query: bool = True,
+        batch_size: int = 256,
+        max_length: int = 512,
+        instruction: str = "",
+        **kwargs,
+    ):  
+        is_single_sentence = False
+        if isinstance(sentences, str):
+            sentences = [sentences]
+            is_single_sentence = True
+        
+        sentences = [(instruction, s) for s in sentences]
+        all_embeddings = []
+        for start_index in tqdm(range(0, len(sentences), batch_size), desc="Batches", disable=len(sentences)<256):
+            batch = sentences[start_index:start_index+batch_size]
+            inputs = [self.tokenize_example(example, is_query=is_query, max_length=max_length) for example in batch]
+            inputs = self.tokenizer.pad(inputs, return_tensors='pt', pad_to_multiple_of=8)
+            inputs = {
+                'input_ids': inputs['input_ids'].to(self.device),
+                'attention_mask': inputs['attention_mask'].to(self.device),
+                'prompt_length': inputs['prompt_length'].to(self.device),
+                'is_encoding': True,
+            }
+            with torch.no_grad():
+                reps = self(**inputs)['reps']
+            all_embeddings.append(reps.cpu().to(torch.float32).numpy())
+        
+        all_embeddings = np.concatenate(all_embeddings, axis=0)
+        if is_single_sentence:
+            return all_embeddings[0]
+        return all_embeddings
+
+    def encode_queries(self, queries: Union[List[str], str], **kwargs) -> np.ndarray:
+        """Used for encoding the queries of retrieval or reranking tasks"""
+        return self.encode(queries, is_query=True, **kwargs)
+    
+    def encode_corpus(self, corpus: Union[List[str], str, List[Dict[str, str]]], **kwargs) -> np.ndarray:
+        """Used for encoding the corpus of retrieval tasks"""
+        if isinstance(corpus, dict):
+            corpus = [corpus]
+        if isinstance(corpus, list) and isinstance(corpus[0], dict):
+            corpus = [
+                doc["title"] + " " + doc["text"] if "title" in doc 
+                else doc["text"] for doc in corpus
+            ]
+        return self.encode(corpus, is_query=False, **kwargs)
+
+    def set_model_revision(self, revision: str):
+        self.mteb_model_meta.revision = revision
 
 
 class WrappedLusifer(nn.Module):
@@ -441,6 +518,7 @@ class WrappedLusifer(nn.Module):
             model_dtype: torch.dtype = torch.bfloat16,
             model_revision: str = 'dev',
             model_checkpoint: Optional[str] = None,
+            num_gpus: int = 8,
     ) -> None:
         super().__init__()
 
@@ -479,7 +557,8 @@ class WrappedLusifer(nn.Module):
         self.tokenizer = self.model.tokenizer
 
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        self.num_gpus = torch.cuda.device_count()
+        self.num_gpus = min(torch.cuda.device_count(), num_gpus)
+        print(f"Using {self.num_gpus} GPUs")
         self.model.to(self.device)
         if self.num_gpus > 1:
             self.model = nn.DataParallel(self.model)

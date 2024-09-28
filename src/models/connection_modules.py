@@ -15,19 +15,22 @@ class FFWithAddedTokens(nn.Module):
             model_dtype=torch.bfloat16
             ):
         super().__init__()
+        self.dtype = model_dtype
         self.ff = nn.Sequential(
-            nn.Linear(in_dim, in_dim, dtype=model_dtype),
+            nn.Linear(in_dim, in_dim),
             nn.ReLU(),
-            nn.Linear(in_dim, out_dim, dtype=model_dtype),
+            nn.Linear(in_dim, out_dim),
         )
         self.num_added_tokens = num_added_tokens
         if num_added_tokens > 0:
-            self.added_tokens = nn.Parameter(torch.randn(num_added_tokens, out_dim, dtype=model_dtype))
+            self.added_tokens = nn.Parameter(torch.randn(num_added_tokens, out_dim))
     
     def forward(self, x, **kwargs):
-        x = self.ff(x)
-        if self.num_added_tokens > 0:
-            added_tokens = einops.repeat(self.added_tokens, 'n d -> b n d', b=x.size(0))
-            x = torch.cat([x, added_tokens], dim=1) # (b, n + n_a, d)
+        # Cast to correct device type
+        with torch.autocast(device_type=x.device.type, dtype=self.dtype):
+            x = self.ff(x)
+            if self.num_added_tokens > 0:
+                added_tokens = einops.repeat(self.added_tokens, 'n d -> b n d', b=x.size(0))
+                x = torch.cat([x, added_tokens], dim=1) # (b, n + n_a, d)
         return x
 
