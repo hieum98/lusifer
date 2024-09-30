@@ -7,7 +7,7 @@ mask_probability: 0.5
 max_seq_length: 512
 neg_per_sample: 32
 num_workers: 8
-number_training_samples: 1_000_000
+number_training_samples: 100_000
 pos_per_sample: 3
 use_retrieval_data_only: false
 
@@ -30,7 +30,7 @@ universal_learner_name_or_path: FacebookAI/xlm-roberta-large
 activation_checkpointing: true
 checkpoint_dir: output/Mistral-v0.1-reconstruct-mask_0.5-add.test2
 checkpoint_file: null
-checkpoint_interval: 2000
+checkpoint_interval: 1000
 devices: 4
 eval_batch_size: 128
 gc_chunk_size: 16
