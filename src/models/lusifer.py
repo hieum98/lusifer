@@ -26,7 +26,7 @@ from src.models.bidirectional_modelings.modeling_bidirectional_phi3 import Bidir
 from src.models.bidirectional_modelings.modeling_bidirectional_phi import BidirectionalPhiForCausalLM
 from src.models.bidirectional_modelings.modeling_bidirectional_qwen2 import BidirectionalQwen2ForCausalLM
 from src.models.bidirectional_modelings.modeling_bidirectional_gemma2 import BidirectionalGemma2ForCausalLM
-from src.models.connection_modules import FFWithAddedTokens
+from src.models.connection_modules import FFWithAddedTokens, EmbeddingTable
 from src.special_tokens import SPECIAL_TOKENS
 from src.models.utils import find_all_linear_names
 
@@ -137,6 +137,16 @@ class Lusifer(nn.Module):
                 num_added_tokens=self.num_added_tokens,
                 model_dtype=model_dtype,
             )
+        elif connection_type == 'embedding_table':
+            self.connection_module = EmbeddingTable(
+                in_dim=self.universal_learner_dim,
+                out_dim=self.encoder_dim,
+                vocab_size=self.encoder.config.vocab_size,
+                padding_idx=self.encoder.config.pad_token_id,
+                llm_embedding=self.encoder.get_input_embeddings(),
+                model_dtype=model_dtype,
+            )
+            self.num_added_tokens = 0
         else:
             raise NotImplementedError(f"Connection type {connection_type} not implemented")
 
@@ -316,7 +326,7 @@ class Lusifer(nn.Module):
         return embedding.contiguous().to(hidden_state.dtype)
     
     def construct_input_attn_mask(self, attention_mask: torch.Tensor):
-        if self.connection_type == 'ff':
+        if self.connection_type in ['ff', 'embedding_table']:	
             attention_mask = torch.cat([
                 attention_mask, 
                 torch.ones((attention_mask.size(0), self.num_added_tokens), device=attention_mask.device, dtype=attention_mask.dtype)

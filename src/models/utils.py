@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.distributed.fsdp.wrap import _or_policy, lambda_auto_wrap_policy, transformer_auto_wrap_policy
 from transformers import PreTrainedModel, Conv1D
 from peft.tuners.lora import LoraLayer
-from src.models.connection_modules import FFWithAddedTokens
+from src.models.connection_modules import FFWithAddedTokens, EmbeddingTable
 
 
 def find_all_linear_names(model: nn.Module, quantization: Optional[bool] = False):
@@ -49,7 +49,7 @@ def get_wrapping_policy(transformer_layers: Set[nn.Module]):
         # All leaf modules with requires_grad=True
         is_atomic_trainable_layer = (len(list(module.named_children())) == 0) and (getattr(module, "weight", None) is not None) and (module.weight.requires_grad)
         is_trainable_seqential = isinstance(module, nn.Sequential) and all(m.weight.requires_grad for m in module if hasattr(m, "weight"))
-        is_connector = isinstance(module, FFWithAddedTokens)
+        is_connector = isinstance(module, (FFWithAddedTokens, EmbeddingTable))
         is_lora_layer = isinstance(module, LoraLayer)
         return is_atomic_trainable_layer or is_trainable_seqential or is_lora_layer or is_connector
     lambda_policy = functools.partial(lambda_auto_wrap_policy, lambda_fn=lambda_policy_fn)
@@ -71,7 +71,8 @@ def get_activation_checkpointing_policy(transformer_layers: Set[nn.Module]):
     """
     def lambda_policy_fn(module):
         is_trainable_seqential = isinstance(module, nn.Sequential) and all(m.weight.requires_grad for m in module if hasattr(m, "weight"))
-        return is_trainable_seqential 
+        is_connector = isinstance(module, (FFWithAddedTokens, EmbeddingTable))
+        return is_trainable_seqential or is_connector
     lambda_policy = functools.partial(lambda_auto_wrap_policy, lambda_fn=lambda_policy_fn)
 
     transformer_wrap_policy = functools.partial(
