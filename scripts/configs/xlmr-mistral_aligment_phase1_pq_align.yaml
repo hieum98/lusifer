@@ -32,7 +32,7 @@ checkpoint_dir: output/Mistral-v0.1-reconstruct-mask_0.5-add.test2
 checkpoint_file: null
 checkpoint_interval: 1000
 devices: 4
-eval_batch_size: 128
+eval_batch_size: 64
 gc_chunk_size: 16
 global_batch_size: 256
 grad_norm_clip: 1.0
