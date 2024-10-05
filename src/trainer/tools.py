@@ -92,7 +92,8 @@ if __name__ == '__main__':
 
     # Save the model using torch
     # Create the output directory if it does not exist
-    Path(args.output_path).parent.mkdir(parents=True, exist_ok=True)
+    if args.output_path is not None:
+        Path(args.output_path).parent.mkdir(parents=True, exist_ok=True)
     # Save the universal learner model
     if args.merge_universal_learner_lora:
         model_to_save = model.universal_learner

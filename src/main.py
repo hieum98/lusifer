@@ -21,6 +21,7 @@ from transformers.models.xlm_roberta.modeling_xlm_roberta import XLMRobertaLayer
 from src.eval.eval import eval_mteb, eval_multilingual
 from src.data_modules.rep_learning_datamodule import RepLearningDataModule, get_dataloaders as get_rep_learning_dataloaders
 from src.data_modules.pretraining_datamodule import PretrainingDataModule, get_dataloaders as get_pretraining_dataloaders
+from src.models.bidirectional_modelings.modeling_nv_embed import LatentAttentionModel
 from src.models.lusifer import Lusifer, WrappedLusifer
 from src.models.utils import get_wrapping_policy, get_activation_checkpointing_policy
 from src.trainer.gradcache_trainer import GradCacheTrainer
@@ -30,9 +31,10 @@ from src.trainer.utils import choose_logger, clear_unused_gpu_mem, get_cosine_sc
 
 
 backbone_to_layer_type = {
-    'mistral': MistralDecoderLayer,
-    't5': MT5Block,
-    'xlm-r': XLMRobertaLayer,
+    'mistral': [MistralDecoderLayer],
+    't5': [MT5Block],
+    'xlm-r': [XLMRobertaLayer],
+    'nvidia/NV-Embed-v2': [MistralDecoderLayer, LatentAttentionModel]
 }
 
 def main(
@@ -59,11 +61,18 @@ def main(
             num_added_tokens=model_args.num_added_tokens,
             encoder_lora_name=model_args.encoder_lora_name,
             universal_learner_lora_name=model_args.universal_learner_lora_name,
+            encoder_lora_target_modules=model_args.encoder_lora_target_modules,
+            universal_learner_lora_target_modules=model_args.universal_learner_lora_target_modules,
             loar_r=model_args.loar_r,
             lora_alpha=model_args.lora_alpha,
             dropout=model_args.dropout,
             attn_implementation=model_args.attn_implementation,
         )
+        if training_args.only_load_model and training_args.checkpoint_file is not None:
+            fabric.print(f"Only load model from {training_args.checkpoint_file}")
+            state_dict = torch.load(training_args.checkpoint_file, map_location='cpu', weights_only=True)
+            _, incompatible_keys = model.load_state_dict(state_dict['model'], strict=False)
+            fabric.print(f"Incompatible keys when loading Lusifer: {incompatible_keys}")
     tokenizer = model.tokenizer
     encoder_tokenizer = model.encoder_tokenizer
     trainable_params, all_param, trainable_params_percentage, trainable_layers = get_trainable_parameters(model)
@@ -150,14 +159,14 @@ def main(
         checkpoint_path = training_args.checkpoint_file
         if os.path.exists(checkpoint_path):
             fabric.print(f"Load checkpoint from {checkpoint_path}")
-            if training_args.only_load_model:
-                print(f"Only load model from {checkpoint_path}")
-                model_state = {'model': model}
-                remaining_keys = fabric.load(checkpoint_path, model_state, strict=False)
-                remaining_keys = remaining_keys.get("model", None)
-                fabric.print(f"Following keys are not loaded: {remaining_keys}")
-                model = model_state.pop("model")
-            else:
+            if not training_args.only_load_model:
+            #     print(f"Only load model from {checkpoint_path}")
+            #     model_state = {'model': model}
+            #     remaining_keys = fabric.load(checkpoint_path, model_state, strict=False)
+            #     remaining_keys = remaining_keys.get("model", None)
+            #     fabric.print(f"Following keys are not loaded: {remaining_keys}")
+            #     model = model_state.pop("model")
+            # else:
                 print(f"Load all states from {checkpoint_path}")
                 state['model'] = model
                 remaining_keys = fabric.load(checkpoint_path, state, strict=False)
@@ -312,8 +321,9 @@ def setup(data_args: DataArguments, model_args: ModelArguments, training_args: T
             else:
                 raise ValueError("Invalid sharding strategy")
 
-            backbone_layer_types = {backbone_to_layer_type[model_args.encoder_backbone_type], 
-                                    backbone_to_layer_type[model_args.universal_learner_backbone_type]}
+            backbone_layer_types = backbone_to_layer_type[model_args.encoder_backbone_type] + backbone_to_layer_type[model_args.universal_learner_backbone_type]
+            backbone_layer_types = set(backbone_layer_types)
+            print(f"Backbone layer types: {backbone_layer_types}")
             wrapping_policy = get_wrapping_policy(backbone_layer_types)
             activation_checkpointing_policy = get_activation_checkpointing_policy(backbone_layer_types)
             

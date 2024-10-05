@@ -464,7 +464,6 @@ QUICK_EVAL = [
     'WikipediaRerankingMultilingual',
     # Retrieval
     "ArguAna",
-    "RuBQRetrieval",
     "VieQuADRetrieval",
     "WikipediaRetrievalMultilingual"
     # STS

@@ -6,6 +6,7 @@ from torch.distributed.fsdp.wrap import _or_policy, lambda_auto_wrap_policy, tra
 from transformers import PreTrainedModel, Conv1D
 from peft.tuners.lora import LoraLayer
 from src.models.connection_modules import FFWithAddedTokens, EmbeddingTable
+from src.models.bidirectional_modelings.modeling_nv_embed import LatentAttentionModel
 
 
 def find_all_linear_names(model: nn.Module, quantization: Optional[bool] = False):
@@ -71,8 +72,9 @@ def get_activation_checkpointing_policy(transformer_layers: Set[nn.Module]):
     """
     def lambda_policy_fn(module):
         is_trainable_seqential = isinstance(module, nn.Sequential) and all(m.weight.requires_grad for m in module if hasattr(m, "weight"))
+        is_latent_attention_model = isinstance(module, LatentAttentionModel)
         is_connector = isinstance(module, (FFWithAddedTokens, EmbeddingTable))
-        return is_trainable_seqential or is_connector
+        return is_trainable_seqential or is_connector or is_latent_attention_model
     lambda_policy = functools.partial(lambda_auto_wrap_policy, lambda_fn=lambda_policy_fn)
 
     transformer_wrap_policy = functools.partial(

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Union
 
 
 @dataclass
@@ -65,7 +65,7 @@ class ModelArguments:
         metadata={"help": "The type of the encoder backbone."}
     )
     is_freeze_universal_learner: bool = field(
-        default=True,
+        default=False,
         metadata={"help": "Whether to freeze the universal learner model or not."} 
     )
     connection_type: str = field(
@@ -80,9 +80,17 @@ class ModelArguments:
         default=None,
         metadata={"help": "The name of the encoder LoRA layer."}
     )
+    encoder_lora_target_modules: Union[str, List[str]] = field(
+        default="all",
+        metadata={"help": "Target modules for LoRA in the encoder."}
+    )
     universal_learner_lora_name: str = field(
         default=None,
         metadata={"help": "The name of the universal learner LoRA layer."}
+    )
+    universal_learner_lora_target_modules: Union[str, List[str]] = field(
+        default="all",
+        metadata={"help": "Target modules for LoRA in the universal learner."}
     )
     loar_r: int = field(
         default=16,
