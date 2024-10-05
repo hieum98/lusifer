@@ -9,5 +9,9 @@ SPECIAL_TOKENS = {
     'mistral': {
         'bos': '<s>',
         'eos': '</s>',
+    },
+    'nvidia/NV-Embed-v2': {
+        'bos': '<s>',
+        'eos': '</s>',
     }
 }

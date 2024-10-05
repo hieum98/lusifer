@@ -26,6 +26,8 @@ from src.models.bidirectional_modelings.modeling_bidirectional_phi3 import Bidir
 from src.models.bidirectional_modelings.modeling_bidirectional_phi import BidirectionalPhiForCausalLM
 from src.models.bidirectional_modelings.modeling_bidirectional_qwen2 import BidirectionalQwen2ForCausalLM
 from src.models.bidirectional_modelings.modeling_bidirectional_gemma2 import BidirectionalGemma2ForCausalLM
+from src.models.bidirectional_modelings.modeling_nv_embed import LatentAttentionModel
+from src.models.bidirectional_modelings.config_nvembed import LatentAttentionConfig
 from src.models.connection_modules import FFWithAddedTokens, EmbeddingTable
 from src.special_tokens import SPECIAL_TOKENS
 from src.models.utils import find_all_linear_names
@@ -45,6 +47,8 @@ class Lusifer(nn.Module):
             pooling_method: str='mean',
             encoder_lora_name: str = 'encoder_lora',
             universal_learner_lora_name: str = 'universal_learner_lora',
+            encoder_lora_target_modules: Union[str, List[str]] = "all",
+            universal_learner_lora_target_modules: Union[str, List[str]] = "all",
             loar_r: int = 16,
             lora_alpha: int = 32,
             dropout: float = 0.1,
@@ -64,6 +68,8 @@ class Lusifer(nn.Module):
             'pooling_method': pooling_method,
             'encoder_lora_name': encoder_lora_name,
             'universal_learner_lora_name': universal_learner_lora_name,
+            'encoder_lora_target_modules': encoder_lora_target_modules,
+            'universal_learner_lora_target_modules': universal_learner_lora_target_modules,
             'loar_r': loar_r,
             'lora_alpha': lora_alpha,
             'dropout': dropout,
@@ -95,12 +101,16 @@ class Lusifer(nn.Module):
             adapter_name=universal_learner_lora_name,
             attn_implementation=attn_implementation,
             model_dtype=model_dtype,
+            target_modules=universal_learner_lora_target_modules,
         )
         if is_freeze_universal_learner and universal_learner_lora_name != None:
             print("Warning: You are freezing the univeral learner but the model has an adapter. Set is_freeze_universal_learner=False to train the adapter.")
             is_freeze_universal_learner = False
         if is_freeze_universal_learner:
             self.universal_learner.requires_grad_(False)
+        elif universal_learner_lora_name == None:
+            # Always cast the model to the float32 when it is fully trainable to avoid the error in the mixed precision training and can compartible with grad_clip
+            self.universal_learner = self.universal_learner.to(dtype=torch.float32)
         self.universal_learner_dim = self.universal_learner.config.hidden_size
 
         self.encoder = self.create_transformer(
@@ -114,7 +124,13 @@ class Lusifer(nn.Module):
             adapter_name=encoder_lora_name,
             attn_implementation=attn_implementation,
             model_dtype=model_dtype,
+            target_modules=encoder_lora_target_modules,
         )
+        if encoder_backbone_type == 'nvidia/NV-Embed-v2':
+            print("Loading latent attention model of NV-Embed-v2")
+            self.laten_attention_model, loading_info = LatentAttentionModel.from_pretrained('Hieuman/nvembed-v2-latent-attention', output_loading_info=True)
+            print(f"Latent attention model loading info: {loading_info}")
+
         self.encoder_dim = self.encoder.config.hidden_size
         if is_freeze_encoder and encoder_lora_name != None:
             print("Warning: You are freezing the encoder but the model has an adapter. Set is_freeze_encoder=False to train the adapter.")
@@ -219,6 +235,7 @@ class Lusifer(nn.Module):
             'torch_dtype': torch.bfloat16 if attn_implementation == "flash_attention_2" else model_dtype,
             'attn_implementation': attn_implementation,
             'trust_remote_code': True,
+            'output_loading_info': True,
         }
         model_class = AutoModel
         if not is_llm_bidirectional:
@@ -228,11 +245,12 @@ class Lusifer(nn.Module):
                     'pretrained_model_name_or_path': model_name_or_path, 
                     'config': config,
                     'torch_dtype': torch.bfloat16 if attn_implementation == "flash_attention_2" else model_dtype,
+                    'output_loading_info': True,
                     }
             elif 'xlm' in model_name_or_path:
                 kwargs.pop('attn_implementation')
         else:
-            if backbone_type == "mistral":
+            if backbone_type in ["mistral", "nvidia/NV-Embed-v2"]:
                 model_class = BidirectionalMistralForCausalLM
             elif backbone_type == "llama":
                 model_class = BidirectionalLlamaForCausalLM
@@ -244,17 +262,12 @@ class Lusifer(nn.Module):
                 model_class = BidirectionalQwen2ForCausalLM
             elif backbone_type == 'gemma2':
                 model_class = BidirectionalGemma2ForCausalLM
-            elif backbone_type == 'nvidia/NV-Embed-v2':
-                kwargs = {
-                    'pretrained_model_name_or_path': model_name_or_path,
-                    'trust_remote_code': True,
-                }
-                model_class = AutoModel
             else:
                 model_class = AutoModel
         
         print(f"Using model class: {model_class}")
-        transformer: PreTrainedModel = model_class.from_pretrained(**kwargs)
+        transformer, loading_info = model_class.from_pretrained(**kwargs)
+        print(f"Model loading info: {loading_info}")
 
         if use_lora:
             if target_modules == "all":
@@ -354,36 +367,24 @@ class Lusifer(nn.Module):
         universal_representation = self.connection_module(universal_representation, attention_mask=attention_mask)
         attention_mask = self.construct_input_attn_mask(attention_mask)
         if is_encoding:
+            encoder_representation = self.encoder(
+                inputs_embeds=universal_representation,
+                attention_mask=attention_mask,
+                return_dict=True,
+                is_causal=False,
+                output_hidden_states=True
+            ).hidden_states[-1] # (batch_size, seq_len, hidden_size)
             if self.encoder_backbone_type == 'nvidia/NV-Embed-v2':
-                autocast_ctx = torch.autocast if torch.cuda.is_available() else nullcontext
-                with autocast_ctx(device_type=universal_representation.device.type, dtype=self.model_dtype):
-                    outputs = self.encoder.embedding_model(
-                        input_ids=None, 
-                        inputs_embeds=universal_representation,
-                        attention_mask=attention_mask,
-                    )
-                    ## latent attention layer
-                    pool_mask = attention_mask.clone()
-                    if prompt_length is not None:
-                        for i, l in enumerate(prompt_length):
-                            attention_mask[i, :l] = 0
-                            # Make sure not all zeros - If this happens it is a bug
-                            assert attention_mask[i].sum() > 0, "You have all zeros in the attention mask!"
-                    embeds = self.encoder.latent_attention_model(outputs.last_hidden_state, pool_mask)
-                    return {'reps': embeds, 'projection': embeds}
-            else:    
-                encoder_representation = self.encoder(
-                    inputs_embeds=universal_representation,
-                    attention_mask=attention_mask,
-                    return_dict=True,
-                    is_causal=False,
-                    output_hidden_states=True
-                ).hidden_states[-1] # (batch_size, seq_len, hidden_size)
+                pool_mask = attention_mask.clone()
+                with torch.autocast(device_type=encoder_representation.device.type, dtype=self.model_dtype):
+                    embeds = self.laten_attention_model(encoder_representation, pool_mask)
+                return {'reps': embeds, 'projection': embeds}
+            else:
                 if self.connection_type == 'ff':
                     sentence_representation = self.pooling(
                         hidden_state=encoder_representation,
                         attention_mask=attention_mask,
-                        prompt_length=prompt_length,
+                        prompt_length=None, # Always None with luifer because the prompt embedding might containt some information dueto soft-prompting in the universal learner
                     ) # (batch_size, hidden_size)
                 else:
                     raise NotImplementedError(f"Connection type {self.connection_type} not implemented")
@@ -523,6 +524,8 @@ class WrappedLusifer(nn.Module):
             pooling_method: str='mean',
             encoder_lora_name: str = 'encoder_lora',
             universal_learner_lora_name: str = 'universal_learner_lora',
+            encoder_lora_target_modules: Union[str, List[str]] = "all",
+            universal_learner_lora_target_modules: Union[str, List[str]] = "all",
             loar_r: int = 16,
             lora_alpha: int = 32,
             dropout: float = 0.1,
@@ -553,6 +556,8 @@ class WrappedLusifer(nn.Module):
             pooling_method=pooling_method,
             encoder_lora_name=encoder_lora_name,
             universal_learner_lora_name=universal_learner_lora_name,
+            encoder_lora_target_modules=encoder_lora_target_modules,
+            universal_learner_lora_target_modules=universal_learner_lora_target_modules,
             loar_r=loar_r,
             lora_alpha=lora_alpha,
             dropout=dropout,
