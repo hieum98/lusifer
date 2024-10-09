@@ -54,7 +54,9 @@ class WrappedHFModel(nn.Module):
                     torch_dtype = torch.float16
             # Check whether gpu is ampere or newer
             if torch.cuda.is_available():
-                if torch.cuda.get_device_properties(0).major >= 8:
+                if model_name_or_path == 'nvidia/NV-Embed-v2':
+                    attn_implementation = None
+                elif torch.cuda.get_device_properties(0).major >= 8 and model_name_or_path not in ['nvidia/NV-Embed-v2']:
                     print("GPU is ampere or newer, using flash_attention_2 for faster and more memory efficient computation.")
                     attn_implementation = 'flash_attention_2'
                 else:
