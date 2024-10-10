@@ -10,7 +10,7 @@ lightning
 mkl-fft
 mkl-random
 lightning
-mteb
+mteb==1.14.21
 peft
 pip-chill
 pysocks
