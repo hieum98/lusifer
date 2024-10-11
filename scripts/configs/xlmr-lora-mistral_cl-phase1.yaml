@@ -7,7 +7,7 @@ mask_probability: 0.5
 max_seq_length: 512
 neg_per_sample: 32
 num_workers: 8
-number_training_samples: 2000
+number_training_samples: 20000
 pos_per_sample: 3
 use_retrieval_data_only: true
 
