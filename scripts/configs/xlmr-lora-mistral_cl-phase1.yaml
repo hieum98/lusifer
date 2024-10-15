@@ -7,7 +7,7 @@ mask_probability: 0.5
 max_seq_length: 512
 neg_per_sample: 32
 num_workers: 8
-number_training_samples: 20000
+number_training_samples: 5000
 pos_per_sample: 3
 use_retrieval_data_only: true
 
@@ -38,7 +38,7 @@ universal_learner_name_or_path: Hieuman/xlm-mistral-v0.1-align-phase1-universal-
 activation_checkpointing: true
 checkpoint_dir: output/Mistral-v0.1-completion-mask_0.5-add.v1.1
 checkpoint_file: output/Mistral-v0.1-reconstruct-mask_0.5-add.v1.0/best_en.ckpt
-checkpoint_interval: 1000
+checkpoint_interval: 500
 devices: 4
 eval_batch_size: 128
 gc_chunk_size: 2

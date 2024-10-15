@@ -7,7 +7,7 @@ mask_probability: 0.5
 max_seq_length: 512
 neg_per_sample: 32
 num_workers: 8
-number_training_samples: 100_000
+number_training_samples: 100000
 pos_per_sample: 3
 use_retrieval_data_only: false
 
@@ -21,16 +21,16 @@ encoder_name_or_path: mistralai/Mistral-7B-v0.1
 is_freeze_universal_learner: false
 loar_r: 16
 lora_alpha: 32
-num_added_tokens: 1
+num_added_tokens: 0
 universal_learner_backbone_type: xlm-r
 universal_learner_lora_name: universal_learner_lora
 universal_learner_name_or_path: FacebookAI/xlm-roberta-large
 
 # Training args
 activation_checkpointing: true
-checkpoint_dir: output/Mistral-v0.1-reconstruct-mask_0.5-add.test2
+checkpoint_dir: output/Mistral-v0.1-reconstruct-mask_0.5-add.v1.0
 checkpoint_file: null
-checkpoint_interval: 1000
+checkpoint_interval: 2000
 devices: 4
 eval_batch_size: 128
 gc_chunk_size: 16

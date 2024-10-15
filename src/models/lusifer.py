@@ -380,7 +380,7 @@ class Lusifer(nn.Module):
                     embeds = self.laten_attention_model(encoder_representation, pool_mask)
                 return {'reps': embeds, 'projection': embeds}
             else:
-                if self.connection_type == 'ff':
+                if self.connection_type in ['ff', 'embedding_table']:
                     sentence_representation = self.pooling(
                         hidden_state=encoder_representation,
                         attention_mask=attention_mask,
