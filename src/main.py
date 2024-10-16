@@ -442,8 +442,13 @@ if __name__ == "__main__":
     training_args.learning_rate = args.learning_rate if args.learning_rate is not None else training_args.learning_rate
     training_args.min_learning_rate = args.min_learning_rate if args.min_learning_rate is not None else training_args.min_learning_rate
     training_args.checkpoint_dir = args.checkpoint_dir if args.checkpoint_dir is not None else training_args.checkpoint_dir
-    training_args.checkpoint_file = args.checkpoint_file if args.checkpoint_file is not None else training_args.checkpoint_file
-    training_args.only_load_model = args.only_load_model
+    lastest_checkpoint = os.path.join(training_args.checkpoint_dir, "lastest.ckpt")
+    if os.path.exists(lastest_checkpoint):
+        training_args.checkpoint_file = lastest_checkpoint
+        training_args.only_load_model = True
+    else:
+        training_args.checkpoint_file = args.checkpoint_file if args.checkpoint_file is not None else training_args.checkpoint_file
+        training_args.only_load_model = args.only_load_model
     data_args.mask_probability = args.mask_probability if args.mask_probability is not None else data_args.mask_probability
     model_args.num_added_tokens = args.num_added_tokens if args.num_added_tokens is not None else model_args.num_added_tokens
 
