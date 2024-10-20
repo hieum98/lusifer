@@ -72,7 +72,6 @@ def get_wrapping_policy(transformer_layers: List[nn.Module]):
     return functools.partial(_or_policy, policies=policies)
 
 
-
 def get_trainable_parameters(model: nn.Module) -> Tuple[int, int, float]:
     """
     Prints the number of trainable parameters in the model.
@@ -148,6 +147,36 @@ def get_cosine_schedule_with_warmup(
         )
         return max(min_reduce_rate, cosine_lr_multiple)
 
+    return LambdaLR(optimizer, lr_lambda, last_epoch)
+
+
+def get_cosine_annealing_schedule_with_warmup(
+        optimizer: torch.optim.Optimizer,
+        num_warmup_steps: int,
+        num_training_steps: int,
+        num_cycles: float = 1,
+        min_reduce_rate: float = 0.0,
+        last_epoch: int = -1,
+    ) -> LambdaLR:
+
+    def lr_lambda(current_step):
+        num_training_steps_per_cycle = num_training_steps // num_cycles
+        if current_step >= num_training_steps:
+            return min_reduce_rate
+        # Get current step in the current epoch
+        current_step = current_step % num_training_steps_per_cycle
+        # Linearly increase learning rate from min_reduce_rate to 1.0 over num_warmup_steps
+        if current_step < num_warmup_steps:
+            return  min_reduce_rate + (1.0 - min_reduce_rate) * current_step / max(1, num_warmup_steps)
+        # Cosin schedule learning rate from 1.0 to min_reduce_rate
+        progress = (current_step - num_warmup_steps) / max(
+            1, num_training_steps_per_cycle - num_warmup_steps
+        )
+        cosine_lr_multiple = 0.5 * (
+            1.0 + min_reduce_rate + math.cos(math.pi * progress) * (1.0 - min_reduce_rate)
+        )
+        return max(min_reduce_rate, cosine_lr_multiple)
+    
     return LambdaLR(optimizer, lr_lambda, last_epoch)
 
 

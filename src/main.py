@@ -27,7 +27,7 @@ from src.models.utils import get_wrapping_policy, get_activation_checkpointing_p
 from src.trainer.gradcache_trainer import GradCacheTrainer
 from src.trainer.alignment_trainer import AlignmentTrainer
 from src.args import DataArguments, ModelArguments, TrainingArguments
-from src.trainer.utils import choose_logger, clear_unused_gpu_mem, get_cosine_schedule_with_warmup, get_trainable_parameters, trainable_filter
+from src.trainer.utils import choose_logger, clear_unused_gpu_mem, get_cosine_schedule_with_warmup, get_trainable_parameters, trainable_filter, get_cosine_annealing_schedule_with_warmup
 
 
 backbone_to_layer_type = {
@@ -120,7 +120,8 @@ def main(
         step_per_epoch = len(train_dataloader)
     
     lr_max_steps = min(training_args.max_steps, step_per_epoch * training_args.max_epochs)
-    warmup_steps = min(training_args.warmpup_proportion * lr_max_steps, 500)
+    num_epochs = lr_max_steps // step_per_epoch if lr_max_steps // step_per_epoch > 0 else 1
+    warmup_steps = min(training_args.warmpup_proportion * step_per_epoch, 500)
     lr = training_args.learning_rate
     min_lr = training_args.min_learning_rate
     min_reduce_rate = min_lr / lr
@@ -140,10 +141,11 @@ def main(
         betas=(0.9, 0.999),
     )
     optimizer = fabric.setup_optimizers(optimizer)
-    scheduler = get_cosine_schedule_with_warmup(
+    scheduler = get_cosine_annealing_schedule_with_warmup(
         optimizer,
         num_warmup_steps=warmup_steps,
         num_training_steps=lr_max_steps,
+        num_cycles=num_epochs,
         min_reduce_rate=min_reduce_rate,
     )
 
