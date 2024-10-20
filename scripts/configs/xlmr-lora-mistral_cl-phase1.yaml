@@ -7,7 +7,7 @@ mask_probability: 0.5
 max_seq_length: 512
 neg_per_sample: 32
 num_workers: 8
-number_training_samples: 2000
+number_training_samples: 5000
 pos_per_sample: 3
 use_retrieval_data_only: true
 
@@ -52,7 +52,7 @@ log_interval: 1
 logger_name: xlm-mistral
 logger_type: wandb
 loss_type: NTXentLoss
-max_epochs: 10
+max_epochs: 5
 max_steps: 25000
 min_learning_rate: 1.0e-07
 model_revision: xlm-mistral-v0.1-cl
