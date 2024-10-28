@@ -196,6 +196,10 @@ class TrainingArguments:
         default=float("inf"),
         metadata={"help": "Maximum number of steps to train"}
     )
+    is_cosine_annealing: bool = field(
+        default=True,
+        metadata={"help": "Whether to use cosine annealing or not"}
+    )
     learning_rate: float = field(
         default=1e-4,
         metadata={"help": "Learning rate"}

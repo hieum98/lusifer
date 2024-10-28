@@ -145,7 +145,7 @@ def main(
         optimizer,
         num_warmup_steps=warmup_steps,
         num_training_steps=lr_max_steps,
-        num_cycles=num_epochs,
+        num_cycles=num_epochs if training_args.is_cosine_annealing else 1,
         min_reduce_rate=min_reduce_rate,
     )
 

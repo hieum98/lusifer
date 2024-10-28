@@ -43,6 +43,8 @@ class WrappedHFModel(nn.Module):
                 query_instruction_for_retrieval="Given a web search query, retrieve relevant passages that answer the query.",
                 use_fp16=True
                 ) # Setting use_fp16 to True speeds up computation with a slight performance degradation
+        elif model_name_or_path == 'jinaai/jina-embeddings-v3':
+            self.model = AutoModel.from_pretrained("jinaai/jina-embeddings-v3", trust_remote_code=True, torch_dtype=torch.float16)
         else:
             # check if gpu is support bf16
             if torch.cuda.is_available():
@@ -193,6 +195,14 @@ class WrappedHFModel(nn.Module):
                 outputs = self.model.encode(batch, instruction=instruction, max_length=max_length)
                 embeddings = F.normalize(outputs, p=2, dim=1)
                 all_embeddings.append(embeddings.cpu().float().numpy())
+            all_embeddings = np.concatenate(all_embeddings, axis=0)
+        elif self.model_name_or_path=='jinaai/jina-embeddings-v3':
+            all_embeddings = []
+            for start_index in tqdm(range(0, len(sentences), batch_size), desc="Batches", disable=len(sentences)<256):
+                batch = sentences[start_index:start_index+batch_size]
+                input_texts = [self.format_data(text, is_query) for text in batch]
+                embeddings = self.model.encode(input_texts, task="text-matching")
+                all_embeddings.append(embeddings)
             all_embeddings = np.concatenate(all_embeddings, axis=0)
         else:
             all_embeddings = []

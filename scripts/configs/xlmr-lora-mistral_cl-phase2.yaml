@@ -7,9 +7,9 @@ mask_probability: 0.5
 max_seq_length: 512
 neg_per_sample: 32
 num_workers: 8
-number_training_samples: 2000
+number_training_samples: 5000
 pos_per_sample: 3
-use_retrieval_data_only: true
+use_retrieval_data_only: false
 
 # Model args
 attn_implementation: flash_attention_2
@@ -27,7 +27,6 @@ encoder_lora_target_modules:
 - o_proj
 encoder_name_or_path: Hieuman/nvembed-v2-mistral
 is_freeze_universal_learner: false
-is_cosine_annealing: false
 loar_r: 16
 lora_alpha: 32
 num_added_tokens: 1
@@ -50,18 +49,18 @@ is_alignment: false
 is_distance: true
 learning_rate: 5.0e-05
 log_interval: 1
-logger_name: xlm-mistral
+logger_name: lusifer
 logger_type: wandb
 loss_type: NTXentLoss
-max_epochs: 3
+max_epochs: 5
 max_steps: 25000
 min_learning_rate: 1.0e-07
-model_revision: xlm-mistral-v0.1-cl
+model_revision: xlmr-lora-nvemb-cl-phase2
 nodes: 1
 only_load_model: true
 precision: bf16-mixed
 quantization: false
-seed: 888
+seed: 1000
 sharding_strategy: full_shard
 strategy: fsdp
 temperature: 0.05
