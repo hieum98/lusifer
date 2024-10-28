@@ -27,6 +27,7 @@ encoder_lora_target_modules:
 - o_proj
 encoder_name_or_path: Hieuman/nvembed-v2-mistral
 is_freeze_universal_learner: false
+is_cosine_annealing: True
 loar_r: 16
 lora_alpha: 32
 num_added_tokens: 1
@@ -60,7 +61,7 @@ nodes: 1
 only_load_model: true
 precision: bf16-mixed
 quantization: false
-seed: 1000
+seed: 888
 sharding_strategy: full_shard
 strategy: fsdp
 temperature: 0.05
