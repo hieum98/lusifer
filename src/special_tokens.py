@@ -10,6 +10,10 @@ SPECIAL_TOKENS = {
         'bos': '<s>',
         'eos': '</s>',
     },
+    'llama': {
+        'bos': '<s>',
+        'eos': '</s>',
+    },
     'nvidia/NV-Embed-v2': {
         'bos': '<s>',
         'eos': '</s>',
