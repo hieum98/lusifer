@@ -14,6 +14,7 @@ from lightning.fabric.strategies import FSDPStrategy, DDPStrategy
 from lightning import seed_everything
 from transformers import PreTrainedTokenizer, HfArgumentParser
 from transformers.models.mistral.modeling_mistral import MistralDecoderLayer
+from transformers.models.llama.modeling_llama import LlamaDecoderLayer
 from transformers.models.qwen2.modeling_qwen2 import Qwen2DecoderLayer
 from transformers.models.mt5.modeling_mt5 import MT5Block
 from transformers.models.xlm_roberta.modeling_xlm_roberta import XLMRobertaLayer
@@ -32,6 +33,7 @@ from src.trainer.utils import choose_logger, clear_unused_gpu_mem, get_cosine_sc
 
 backbone_to_layer_type = {
     'mistral': [MistralDecoderLayer],
+    'llama': [LlamaDecoderLayer],
     't5': [MT5Block],
     'xlm-r': [XLMRobertaLayer],
     'nvidia/NV-Embed-v2': [MistralDecoderLayer, LatentAttentionModel]
