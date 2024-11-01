@@ -19,4 +19,7 @@ SFR-2R
 mbge-gemma2
 *.log
 xlm-mistral-v0.3.v0
-Mistral-v0.1-reconstruct-no_mask-no_add.test1
+jina-v3
+lusifer.mistral-v0.3
+lusifer.nv_emb.v1.1
+lusifer.nv_emb.v1.0

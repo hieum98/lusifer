@@ -3,19 +3,20 @@ is_query_positive_alignment: false
 is_reconstruct: false
 langs:
 - en
+- zh
 mask_probability: 0.5
 max_seq_length: 512
 neg_per_sample: 32
 num_workers: 8
-number_training_samples: 5000
+number_training_samples: 2000
 pos_per_sample: 3
-use_retrieval_data_only: false
+use_retrieval_data_only: true
 
 # Model args
 attn_implementation: flash_attention_2
 connection_type: ff
 dropout: 0.1
-encoder_backbone_type: nvidia/NV-Embed-v2
+encoder_backbone_type: llama
 encoder_lora_name: encoder_lora
 encoder_lora_target_modules:
 - q_proj
@@ -25,9 +26,9 @@ encoder_lora_target_modules:
 - down_proj
 - up_proj
 - o_proj
-encoder_name_or_path: Hieuman/nvembed-v2-mistral
+encoder_name_or_path: meta-llama/Llama-3.1-8B
 is_freeze_universal_learner: false
-is_cosine_annealing: True
+is_cosine_annealing: false
 loar_r: 16
 lora_alpha: 32
 num_added_tokens: 1
@@ -50,13 +51,13 @@ is_alignment: false
 is_distance: true
 learning_rate: 5.0e-05
 log_interval: 1
-logger_name: lusifer
+logger_name: xlm-mistral
 logger_type: wandb
 loss_type: NTXentLoss
-max_epochs: 5
+max_epochs: 3
 max_steps: 25000
 min_learning_rate: 1.0e-07
-model_revision: xlmr-lora-nvemb-cl-phase2
+model_revision: xlm-mistral-v0.1-cl
 nodes: 1
 only_load_model: true
 precision: bf16-mixed

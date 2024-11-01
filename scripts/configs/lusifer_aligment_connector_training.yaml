@@ -1,34 +1,34 @@
 # Data args
 is_query_positive_alignment: true
-is_reconstruct: false
+is_reconstruct: true
 langs:
 - en
 mask_probability: 0.5
 max_seq_length: 512
-neg_per_sample: 32
+neg_per_sample: 1
 num_workers: 8
-number_training_samples: 100_000
-pos_per_sample: 3
+number_training_samples: 10_000
+pos_per_sample: 1
 use_retrieval_data_only: false
 
 # Model args
 attn_implementation: flash_attention_2
 connection_type: ff
 dropout: 0.1
-encoder_backbone_type: mistral
+encoder_backbone_type: llama
 encoder_lora_name: null
-encoder_name_or_path: mistralai/Mistral-7B-v0.1
-is_freeze_universal_learner: false
+encoder_name_or_path: meta-llama/Llama-3.1-8B
+is_freeze_universal_learner: true
 loar_r: 16
 lora_alpha: 32
 num_added_tokens: 1
 universal_learner_backbone_type: xlm-r
-universal_learner_lora_name: universal_learner_lora
+universal_learner_lora_name: null
 universal_learner_name_or_path: FacebookAI/xlm-roberta-large
 
 # Training args
 activation_checkpointing: true
-checkpoint_dir: output/Mistral-v0.1-reconstruct-mask_0.5-add.test2
+checkpoint_dir: output/llama_alignment
 checkpoint_file: null
 checkpoint_interval: 1000
 devices: 4
@@ -40,13 +40,13 @@ is_alignment: true
 is_distance: true
 learning_rate: 0.0002
 log_interval: 1
-logger_name: xlm-mistral
+logger_name: lusifer-llama
 logger_type: wandb
 loss_type: NTXentLoss
 max_epochs: 3
 max_steps: 25000
 min_learning_rate: 1.0e-07
-model_revision: xlm-mistral-v0.1-align-phase1
+model_revision: llama_alignment
 nodes: 1
 only_load_model: false
 precision: bf16-mixed

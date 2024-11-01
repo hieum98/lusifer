@@ -453,7 +453,10 @@ PRETRAINING_QUERY2PASSAGE = [
     'Hieuman/imdb',
     'Hieuman/MTOP-Intent',
     'Hieuman/Toxic-conversation',
-    'Hieuman/Tweet-Sentiment'
+    'Hieuman/Tweet-Sentiment',
+    'Hieuman/dureader',
+    'Hieuman/t2ranking',
+    'Hieuman/zh_MIRACL'
 ]
 
 EN_CROSS_BATCH = [
