@@ -427,7 +427,7 @@ class Lusifer(nn.Module):
                 labels=labels,
                 inputs_embeds=embeddings,
                 return_dict=True,
-                is_causal=False, # The model is not causal
+                is_causal=False
             )
             loss = llm_outputs.loss
             return {'loss': loss}
