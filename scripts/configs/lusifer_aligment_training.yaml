@@ -16,7 +16,7 @@ attn_implementation: flash_attention_2
 connection_type: ff
 dropout: 0.1
 encoder_backbone_type: llama
-encoder_lora_name: null
+encoder_lora_name: encoder
 encoder_name_or_path: meta-llama/Llama-3.1-8B
 is_freeze_universal_learner: false
 loar_r: 16
