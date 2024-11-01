@@ -155,15 +155,15 @@ if __name__=='__main__':
 
     seed_everything(777)
     universal_learner_tokenizer = AutoTokenizer.from_pretrained('FacebookAI/xlm-roberta-large')
-    lm_tokenizer = AutoTokenizer.from_pretrained('mistralai/Mistral-7B-Instruct-v0.3')
+    lm_tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-3.1-8B')
     if lm_tokenizer.pad_token is None:
-        lm_tokenizer.pad_token = lm_tokenizer.eos_token
-        lm_tokenizer.pad_token_id = lm_tokenizer.eos_token_id
+        lm_tokenizer.pad_token = SPECIAL_TOKENS['llama']['pad']
+    if lm_tokenizer.mask_token is None:
+        lm_tokenizer.mask_token = SPECIAL_TOKENS['llama']['mask']
     if universal_learner_tokenizer.pad_token is None:
         universal_learner_tokenizer.pad_token = universal_learner_tokenizer.eos_token
-        universal_learner_tokenizer.pad_token_id = universal_learner_tokenizer.eos_token_id
     dm = PretrainingDataModule(
-        num_workers=20,
+        num_workers=0,
         seed=777,
     )
     dm.connect(
@@ -179,7 +179,7 @@ if __name__=='__main__':
     dm.setup()
     dl = dm.train_dataloader()
     for batch in tqdm(dl):
-        pass
+        breakpoint()
 
 
 

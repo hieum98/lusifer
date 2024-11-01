@@ -13,6 +13,8 @@ SPECIAL_TOKENS = {
     'llama': {
         'bos': '<|begin_of_text|>',
         'eos': '<|end_of_text|>',
+        'pad': '<|finetune_right_pad_id|>',
+        'mask': "<|reserved_special_token_0|>",
     },
     'nvidia/NV-Embed-v2': {
         'bos': '<s>',

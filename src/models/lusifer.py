@@ -84,8 +84,8 @@ class Lusifer(nn.Module):
             languages=None,
         )
         
-        self.tokenizer = self.create_tokenizer(universal_learner_name_or_path)
-        self.encoder_tokenizer = self.create_tokenizer(encoder_name_or_path)
+        self.tokenizer = self.create_tokenizer(universal_learner_name_or_path, universal_learner_backbone_type)
+        self.encoder_tokenizer = self.create_tokenizer(encoder_name_or_path, encoder_backbone_type)
         self.special_tokens = SPECIAL_TOKENS[universal_learner_backbone_type]
 
         if attn_implementation == "flash_attention_2":
@@ -172,17 +172,23 @@ class Lusifer(nn.Module):
             nn.Linear(self.encoder_dim, self.encoder_dim),
         )
     
-    def create_tokenizer(self, model_name_or_path: str):
+    def create_tokenizer(self, model_name_or_path: str, backbone_type: str):
         # Load tokenizer
         tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path,
             padding_side="right", # Has to be right so masking of instruction tokens works correctly
             trust_remote_code=True,
         )
+        pad_token = SPECIAL_TOKENS.get(backbone_type, {}).get("pad", tokenizer.eos_token)
+        mask_token = SPECIAL_TOKENS.get(backbone_type, {}).get("mask", tokenizer.unk_token)
         if tokenizer.pad_token_id is None:
-            print("Tokenizer does not have a pad token. We will use the bos token as pad token.")
-            tokenizer.pad_token = tokenizer.eos_token
-            tokenizer.pad_token_id = tokenizer.eos_token_id
+            print(f"Tokenizer does not have a pad token. We will use {pad_token} as the pad token.")
+            tokenizer.pad_token = pad_token
+            assert tokenizer.pad_token_id is not None, "Tokenizer does not have a pad token id"
+        if tokenizer.mask_token_id is None:
+            print(f"Tokenizer does not have a mask token. We will use {mask_token} as the mask token.")
+            tokenizer.mask_token = mask_token
+            assert tokenizer.mask_token_id is not None, "Tokenizer does not have a mask token id"
         return tokenizer
     
     def create_transformer(
