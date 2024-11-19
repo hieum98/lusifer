@@ -116,7 +116,7 @@ class WrappedHFModel(nn.Module):
             ):
         if self.model_name_or_path in ['intfloat/multilingual-e5-large']:
             return self.average_pool(last_hidden_states, attention_mask)
-        elif self.model_name_or_path in ['BAAI/bge-multilingual-gemma2', 'Alibaba-NLP/gte-multilingual-base', 'Salesforce/SFR-Embedding-2_R']:
+        elif self.model_name_or_path in ['BAAI/bge-multilingual-gemma2', 'Alibaba-NLP/gte-multilingual-base', 'Salesforce/SFR-Embedding-2_R', 'intfloat/e5-mistral-7b-instruct']:
             return self.last_token_pool(last_hidden_states, attention_mask)
         else:
             return self.average_pool(last_hidden_states, attention_mask)
