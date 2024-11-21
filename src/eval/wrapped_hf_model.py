@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
 from FlagEmbedding import BGEM3FlagModel, FlagLLMModel
+from sentence_transformers import SentenceTransformer
 
 
 class WrappedHFModel(nn.Module):
@@ -45,6 +46,8 @@ class WrappedHFModel(nn.Module):
                 ) # Setting use_fp16 to True speeds up computation with a slight performance degradation
         elif model_name_or_path == 'jinaai/jina-embeddings-v3':
             self.model = AutoModel.from_pretrained("jinaai/jina-embeddings-v3", trust_remote_code=True, torch_dtype=torch.float16)
+        elif model_name_or_path in ['sentence-transformers/gtr-t5-xxl', 'sentence-transformers/sentence-t5-xxl']:
+            self.model = SentenceTransformer(model_name_or_path)
         else:
             # check if gpu is support bf16
             if torch.cuda.is_available():
@@ -56,7 +59,10 @@ class WrappedHFModel(nn.Module):
                     torch_dtype = torch.float16
             # Check whether gpu is ampere or newer
             if torch.cuda.is_available():
-                if model_name_or_path == 'nvidia/NV-Embed-v2':
+                if model_name_or_path in ['nvidia/NV-Embed-v2', 'princeton-nlp/sup-simcse-roberta-large', 
+                                          'facebook/contriever', 'sentence-transformers/gtr-t5-xxl', 
+                                          'sentence-transformers/sentence-t5-xxl', 'thenlper/gte-large',
+                                          'BAAI/bge-large-en-v1.5']:
                     attn_implementation = None
                 elif torch.cuda.get_device_properties(0).major >= 8 and model_name_or_path not in ['nvidia/NV-Embed-v2']:
                     print("GPU is ampere or newer, using flash_attention_2 for faster and more memory efficient computation.")
@@ -82,7 +88,7 @@ class WrappedHFModel(nn.Module):
 
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.num_gpus = min(num_gpus, torch.cuda.device_count())
-        if self.model_name_or_path not in ['BAAI/bge-m3', 'BAAI/bge-multilingual-gemma2']:
+        if self.model_name_or_path not in ['BAAI/bge-m3', 'BAAI/bge-multilingual-gemma2', 'sentence-transformers/gtr-t5-xxl', 'sentence-transformers/sentence-t5-xxl']:
             self.model.to(self.device)
             if self.num_gpus > 1 and self.model_name_or_path not in ['nvidia/NV-Embed-v2']:
                 self.model = nn.DataParallel(self.model)
@@ -188,6 +194,13 @@ class WrappedHFModel(nn.Module):
             all_embeddings = self.model.encode(sentences, batch_size=batch_size, max_length=max_length)['dense_vecs']
         elif self.model_name_or_path=='BAAI/bge-multilingual-gemma2':
             all_embeddings = self.model.encode(sentences, batch_size=batch_size, max_length=max_length)
+        elif self.model_name_or_path in ['sentence-transformers/gtr-t5-xxl', 'sentence-transformers/sentence-t5-xxl']:
+            all_embeddings = []
+            for start_index in tqdm(range(0, len(sentences), batch_size), desc="Batches", disable=len(sentences)<256):
+                batch = sentences[start_index:start_index+batch_size]
+                embeddings = self.model.encode(batch)
+                all_embeddings.append(embeddings)
+            all_embeddings = np.concatenate(all_embeddings, axis=0)
         elif self.model_name_or_path=='nvidia/NV-Embed-v2':
             all_embeddings = []
             for start_index in tqdm(range(0, len(sentences), batch_size), desc="Batches", disable=len(sentences)<256):
