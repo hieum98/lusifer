@@ -83,7 +83,7 @@ class WrappedHFModel(nn.Module):
                 self.tokenizer.pad_token = self.tokenizer.eos_token
                 self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
             
-            if self.tokenizer.padding_side != 'right' and self.model_name_or_path not in ['GritLM/GritLM-7B']:
+            if self.tokenizer.padding_side != 'right':
                 print("Setting padding side to right")
                 self.tokenizer.padding_side = 'right'
 
