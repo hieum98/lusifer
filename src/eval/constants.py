@@ -366,7 +366,7 @@ MULTILINGUAL_DS_TO_PROMPT = {
         "MassiveScenarioClassification": "Given a user utterance as query, find the user scenarios.",
         "MultilingualSentimentClassification": 'Classify the sentiment expressed in the given text as positive or negative.',
         "SIB200Classification": "Identify the category of the following passages.",
-        "VieStudentFeedbackClassification": "Classify the sentiment expressed in the given text as positive, negative or neutral.",
+        # "VieStudentFeedbackClassification": "Classify the sentiment expressed in the given text as positive, negative or neutral.",
         "SIB200ClusteringS2S": "Identify the category of the following passages.",
         "XNLI": 'Given a premise, retrieve a hypothesis that is entailed by the premise.',
         "BelebeleRetrieval": "Given a question, retrieve passages that answer the question.",
