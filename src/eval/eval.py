@@ -13,7 +13,10 @@ from tqdm import tqdm
 
 from src.eval.constants import MTEB_DS_TO_PROMPT, QUICK_EVAL, LANG_TO_CODES, MULTILINGUAL_DS_TO_PROMPT
 from src.eval.wrapped_hf_model import WrappedHFModel
-from src.models.lusifer import WrappedLusifer
+try:
+    from src.models.lusifer import WrappedLusifer
+except:
+    pass
 
 datasets.config.HF_DATASETS_TRUST_REMOTE_CODE = True
 
