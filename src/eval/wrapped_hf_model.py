@@ -7,9 +7,23 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
-from FlagEmbedding import BGEM3FlagModel, FlagLLMModel
+try:
+    from FlagEmbedding import BGEM3FlagModel, FlagLLMModel
+except ImportError:
+    pass
 from sentence_transformers import SentenceTransformer
+try:
+    from llm2vec import LLM2Vec
+except ImportError:
+    pass
+try:
+    from gritlm import GritLM
+except ImportError:
+    pass
 
+
+def gritlm_instruction(instruction):
+    return "<|user|>\n" + instruction + "\n<|embed|>\n" if instruction else "<|embed|>\n"
 
 class WrappedHFModel(nn.Module):
     def __init__(
@@ -48,6 +62,15 @@ class WrappedHFModel(nn.Module):
             self.model = AutoModel.from_pretrained("jinaai/jina-embeddings-v3", trust_remote_code=True, torch_dtype=torch.float16)
         elif model_name_or_path in ['sentence-transformers/gtr-t5-xxl', 'sentence-transformers/sentence-t5-xxl']:
             self.model = SentenceTransformer(model_name_or_path)
+        elif "LLM2Vec" in model_name_or_path:
+            self.model = LLM2Vec.from_pretrained(
+                "McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp",
+                peft_model_name_or_path="McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised",
+                device_map="cuda" if torch.cuda.is_available() else "cpu",
+                torch_dtype=torch.bfloat16,
+            )
+        elif model_name_or_path == 'GritLM/GritLM-7B':
+            self.model = GritLM("GritLM/GritLM-7B", torch_dtype="auto")
         else:
             # check if gpu is support bf16
             if torch.cuda.is_available():
@@ -89,7 +112,9 @@ class WrappedHFModel(nn.Module):
 
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         self.num_gpus = min(num_gpus, torch.cuda.device_count())
-        if self.model_name_or_path not in ['BAAI/bge-m3', 'BAAI/bge-multilingual-gemma2', 'sentence-transformers/gtr-t5-xxl', 'sentence-transformers/sentence-t5-xxl']:
+        if self.model_name_or_path not in ['BAAI/bge-m3', 'BAAI/bge-multilingual-gemma2', 
+                                            'sentence-transformers/gtr-t5-xxl', 'sentence-transformers/sentence-t5-xxl', 
+                                            'McGill-NLP/LLM2Vec-Meta-Llama-3-8B-Instruct-mntp-supervised', 'GritLM/GritLM-7B']:
             self.model.to(self.device)
             if self.num_gpus > 1 and self.model_name_or_path not in ['nvidia/NV-Embed-v2']:
                 self.model = nn.DataParallel(self.model)
@@ -216,6 +241,25 @@ class WrappedHFModel(nn.Module):
                 batch = sentences[start_index:start_index+batch_size]
                 input_texts = [self.format_data(text, is_query) for text in batch]
                 embeddings = self.model.encode(input_texts, task="text-matching")
+                all_embeddings.append(embeddings)
+            all_embeddings = np.concatenate(all_embeddings, axis=0)
+        elif "LLM2Vec" in self.model_name_or_path:
+            if is_query:
+                sentences = [[instruction, query] for query in sentences]
+            all_embeddings = []
+            for start_index in tqdm(range(0, len(sentences), batch_size), desc="Batches", disable=len(sentences)<256):
+                batch = sentences[start_index:start_index+batch_size]
+                embeddings = self.model.encode(batch)
+                all_embeddings.append(embeddings)
+            all_embeddings = np.concatenate(all_embeddings, axis=0)
+        elif self.model_name_or_path == 'GritLM/GritLM-7B':
+            all_embeddings = []
+            for start_index in tqdm(range(0, len(sentences), batch_size), desc="Batches", disable=len(sentences)<256):
+                batch = sentences[start_index:start_index+batch_size]
+                if is_query:
+                    embeddings = self.model.encode(batch, instruction=gritlm_instruction(instruction))
+                else:
+                    embeddings = self.model.encode(batch, instruction=gritlm_instruction(""))
                 all_embeddings.append(embeddings)
             all_embeddings = np.concatenate(all_embeddings, axis=0)
         else:
