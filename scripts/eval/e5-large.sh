@@ -1,6 +1,6 @@
 python -m src.eval.eval \
-    --model_name_or_path BAAI/bge-large-en-v1.5 \
-    --output_folder bge-en \
+    --model_name_or_path intfloat/e5-large \
+    --output_folder e5-large \
     --batch_size 512 \
     --max_length 512 \
     --langs all

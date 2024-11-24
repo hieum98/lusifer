@@ -62,7 +62,7 @@ class WrappedHFModel(nn.Module):
                 if model_name_or_path in ['nvidia/NV-Embed-v2', 'princeton-nlp/sup-simcse-roberta-large', 
                                           'facebook/contriever', 'sentence-transformers/gtr-t5-xxl', 
                                           'sentence-transformers/sentence-t5-xxl', 'thenlper/gte-large',
-                                          'BAAI/bge-large-en-v1.5']:
+                                          'BAAI/bge-large-en-v1.5', 'intfloat/e5-large']:
                     attn_implementation = None
                 elif torch.cuda.get_device_properties(0).major >= 8 and model_name_or_path not in ['nvidia/NV-Embed-v2']:
                     print("GPU is ampere or newer, using flash_attention_2 for faster and more memory efficient computation.")

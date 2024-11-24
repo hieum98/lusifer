@@ -170,7 +170,7 @@ def read_results(result_dir: str):
         "MindSmallReranking",
         "SciDocsRR",
         "StackOverflowDupQuestions",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "ArguAna",
         "ClimateFEVER",
         "CQADupstackTexRetrieval",
@@ -186,7 +186,7 @@ def read_results(result_dir: str):
         "SciFact",
         "Touche2020",
         "TRECCOVID",
-        "MIRACLRetrieval",
+        # "MIRACLRetrieval",
         "STS12",
         "STS13",
         "STS14",
@@ -223,20 +223,20 @@ def read_results(result_dir: str):
         "CLSClusteringS2S",
         "ThuNewsClusteringP2P",
         "ThuNewsClusteringS2S",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "MMarcoReranking",
         "T2Reranking",
-        "CMedQAv2-reranking",
+        # "CMedQAv2-reranking",
         "MLQARetrieval",
-        "MIRACLRetrieval",
+        # "MIRACLRetrieval",
         "CmedqaRetrieval",
         "CovidRetrieval",
         "DuRetrieval",
-        "EcomRetrieval",
-        "MedicalRetrieval",
+        # "EcomRetrieval",
+        # "MedicalRetrieval",
         "MMarcoRetrieval",
         "T2Retrieval",
-        "VideoRetrieval",
+        # "VideoRetrieval",
         "AFQMC",
         "ATEC",
         "BQ",
@@ -247,7 +247,10 @@ def read_results(result_dir: str):
     ]
     zh_results = []
     for zh_data in zh_datas:
-        zh_results.append([zh_data, all_results['zh'][zh_data] * 100]) 
+        try:
+            zh_results.append([zh_data, all_results['zh'][zh_data] * 100])
+        except:
+            print(f"Error in getting results for {zh_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(zh_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "zh_results.xlsx")
@@ -267,19 +270,22 @@ def read_results(result_dir: str):
         "MLSUMClusteringS2S.v2",
         "SIB200ClusteringS2S",
         "MultiEURLEXMultilabelClassification",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "BelebeleRetrieval",
         "MintakaRetrieval",
-        "MIRACLRetrieval",
-        "XPQARetrieval",
-        "XQuADRetrieval",
+        # "MIRACLRetrieval",
+        # "XPQARetrieval",
+        # "XQuADRetrieval",
         "STS17",
         "STS22",
         "STSBenchmarkMultilingualSTS"
     ]
     es_results = []
     for es_data in es_datas:
-        es_results.append([es_data, all_results['es'][es_data] * 100])
+        try:
+            es_results.append([es_data, all_results['es'][es_data] * 100])
+        except:
+            print(f"Error in getting results for {es_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(es_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "es_results.xlsx")
@@ -300,16 +306,16 @@ def read_results(result_dir: str):
         "BlurbsClusteringS2S",
         "MultiEURLEXMultilabelClassification",
         "WikipediaRerankingMultilingual",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "GermanDPR",
         "GermanGovServiceRetrieval",
         "GermanQuAD-Retrieval",
         "BelebeleRetrieval",
         "MintakaRetrieval",
-        "MIRACLRetrieval",
+        # "MIRACLRetrieval",
         "WikipediaRetrievalMultilingual",
-        "XPQARetrieval",
-        "XQuADRetrieval",
+        # "XPQARetrieval",
+        # "XQuADRetrieval",
         "STS17",
         "STS22",
         "STSBenchmarkMultilingualSTS"
@@ -317,10 +323,13 @@ def read_results(result_dir: str):
     de_results = []
     for de_data in de_datas:
         try:
-            res = all_results['de'][de_data]
+            try:
+                res = all_results['de'][de_data]
+            except:
+                res = all_results['de'][de_data+'.v2']
+            de_results.append([de_data,  res* 100])
         except:
-            res = all_results['de'][de_data+'.v2']
-        de_results.append([de_data,  res* 100])
+            print(f"Error in getting results for {de_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(de_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "de_results.xlsx")
@@ -339,17 +348,20 @@ def read_results(result_dir: str):
         "RuSciBenchGRNTIClusteringP2P",
         "RuSciBenchOECDClusteringP2P",
         "TERRa",
-        "MIRACLReranking",
-        "NeuCLIR2023Retrieval",
+        # "MIRACLReranking",
+        # "NeuCLIR2023Retrieval",
         "RiaNewsRetrieval",
         "RuBQRetrieval",
-        "MIRACLRetrieval",
+        # "MIRACLRetrieval",
         "RuSTSBenchmarkSTS",
         "STS22"
     ]
     ru_results = []
     for ru_data in ru_datas:
-        ru_results.append([ru_data, all_results['ru'][ru_data] * 100])
+        try:
+            ru_results.append([ru_data, all_results['ru'][ru_data] * 100])
+        except:
+            print(f"Error in getting results for {ru_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(ru_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "ru_results.xlsx")
@@ -369,21 +381,21 @@ def read_results(result_dir: str):
         "MasakhaNEWSClusteringS2S",
         "MLSUMClusteringP2P.v2",
         "MLSUMClusteringS2S.v2",
-        "AlloProfClusteringP2P",
-        "AlloProfClusteringS2S",
+        # "AlloProfClusteringP2P",
+        # "AlloProfClusteringS2S",
         "HALClusteringS2S",
         "SIB200ClusteringS2S",
         "MultiEURLEXMultilabelClassification",
-        "AlloprofReranking",
-        "SyntecReranking",
-        "MIRACLReranking",
-        "AlloprofRetrieval",
-        "FQuADRetrieval",
+        # "AlloprofReranking",
+        # "SyntecReranking",
+        # "MIRACLReranking",
+        # "AlloprofRetrieval",
+        # "FQuADRetrieval",
         "BelebeleRetrieval",
         "MintakaRetrieval",
-        "MIRACLRetrieval",
-        "PublicHealthQA",
-        "XPQARetrieval",
+        # "MIRACLRetrieval",
+        # "PublicHealthQA",
+        # "XPQARetrieval",
         "OpusparcusPC",
         "STS17",
         "SICKFr",
@@ -394,10 +406,13 @@ def read_results(result_dir: str):
     fr_results = []
     for fr_data in fr_datas:
         try:
-            res = all_results['fr'][fr_data]
+            try:
+                res = all_results['fr'][fr_data]
+            except:
+                res = all_results['fr'][fr_data+'.v2']
+            fr_results.append([fr_data, res * 100])
         except:
-            res = all_results['fr'][fr_data+'.v2']
-        fr_results.append([fr_data, res * 100])
+            print(f"Error in getting results for {fr_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(fr_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "fr_results.xlsx")
@@ -414,25 +429,28 @@ def read_results(result_dir: str):
         "MewsC16JaClustering",
         "SIB200ClusteringS2S",
         "VoyageMMarcoReranking",
-        "MIRACLReranking",
-        "JaGovFaqsRetrieval",
-        "JaQuADRetrieval",
+        # "MIRACLReranking",
+        # "JaGovFaqsRetrieval",
+        # "JaQuADRetrieval",
         "NLPJournalAbsIntroRetrieval",
-        "NLPJournalTitleAbsRetrieval",
+        # "NLPJournalTitleAbsRetrieval",
         "BelebeleRetrieval",
         "MintakaRetrieval",
-        "MIRACLRetrieval",
-        "XPQARetrieval",
+        # "MIRACLRetrieval",
+        # "XPQARetrieval",
         "JSICK",
         "JSTS"
     ]
     ja_results = []
     for ja_data in ja_datas:
         try:
-            res = all_results['ja'][ja_data]
+            try:
+                res = all_results['ja'][ja_data]
+            except:
+                res = all_results['ja'][ja_data+'.v2']  
+            ja_results.append([ja_data, res * 100])
         except:
-            res = all_results['ja'][ja_data+'.v2']  
-        ja_results.append([ja_data, res * 100])
+            print(f"Error in getting results for {ja_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(ja_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "ja_results.xlsx")
@@ -447,13 +465,16 @@ def read_results(result_dir: str):
         "SIB200ClusteringS2S",
         "BelebeleRetrieval",
         "MLQARetrieval",
-        "PublicHealthQA",
-        "XQuADRetrieval",
+        # "PublicHealthQA",
+        # "XQuADRetrieval",
         "VieQuADRetrieval"
     ]
     vi_results = []
     for vi_data in vi_datas:
-        vi_results.append([vi_data, all_results['vi'][vi_data] * 100])
+        try:
+            vi_results.append([vi_data, all_results['vi'][vi_data] * 100])
+        except:
+            print(f"Error in getting results for {vi_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(vi_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "vi_results.xlsx")
@@ -463,15 +484,18 @@ def read_results(result_dir: str):
         "MassiveIntentClassification",
         "MultilingualSentimentClassification",
         "FarsTail",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "WikipediaRerankingMultilingual",
-        "MIRACLRetrieval",
-        "NeuCLIR2023Retrieval",
+        # "MIRACLRetrieval",
+        # "NeuCLIR2023Retrieval",
         "WikipediaRetrievalMultilingual"
     ]
     fa_results = []
     for fa_data in fa_datas:
-        fa_results.append([fa_data, all_results['fa'][fa_data] * 100])
+        try:
+            fa_results.append([fa_data, all_results['fa'][fa_data] * 100])
+        except:
+            print(f"Error in getting results for {fa_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(fa_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "fa_results.xlsx")
@@ -483,14 +507,17 @@ def read_results(result_dir: str):
         "SIB200Classification",
         "indonli",
         "SIB200ClusteringS2S",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "BelebeleRetrieval",
-        "MIRACLRetrieval",
+        # "MIRACLRetrieval",
         "SemRel24STS"
     ]
     id_results = []
     for id_data in id_datas:
-        id_results.append([id_data, all_results['id'][id_data] * 100])
+        try:
+            id_results.append([id_data, all_results['id'][id_data] * 100])
+        except:
+            print(f"Error in getting results for {id_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(id_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "id_results.xlsx")
@@ -499,21 +526,24 @@ def read_results(result_dir: str):
         "TweetEmotionClassification",
         "ArEntail",
         "XNLI",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "MintakaRetrieval",
-        "MIRACLRetrieval",
+        # "MIRACLRetrieval",
         "MLQARetrieval",
-        "XPQARetrieval",
+        # "XPQARetrieval",
         "STS17",
         "STS22"
     ]
     ar_results = []
     for ar_data in ar_datas:
         try:
-            res = all_results['ar'][ar_data]
+            try:
+                res = all_results['ar'][ar_data]
+            except:
+                res = all_results['ar'][ar_data+'.v2']
+            ar_results.append([ar_data, res * 100])
         except:
-            res = all_results['ar'][ar_data+'.v2']
-        ar_results.append([ar_data, res * 100])
+            print(f"Error in getting results for {ar_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(ar_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "ar_results.xlsx")
@@ -524,17 +554,20 @@ def read_results(result_dir: str):
         "MassiveScenarioClassification",
         "MultilingualSentimentClassification",
         "SIB200Classification",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "WikipediaRerankingMultilingual",
         "BelebeleRetrieval",
-        "MIRACLRetrieval",
+        # "MIRACLRetrieval",
         "WikipediaRetrievalMultilingual",
         "OpusparcusPC",
         "FinParaSTS"
     ]
     fi_results = []
     for fi_data in fi_datas:
-        fi_results.append([fi_data, all_results['fi'][fi_data] * 100])
+        try:
+            fi_results.append([fi_data, all_results['fi'][fi_data] * 100])
+        except:
+            print(f"Error in getting results for {fi_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(fi_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "fi_results.xlsx")
@@ -548,19 +581,22 @@ def read_results(result_dir: str):
         "PawsXPairClassification",
         "KLUE-TC",
         "SIB200ClusteringS2S",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "Ko-StrategyQA",
         "BelebeleRetrieval",
-        "MIRACLRetrieval",
-        "PublicHealthQA",
-        "XPQARetrieval",
+        # "MIRACLRetrieval",
+        # "PublicHealthQA",
+        # "XPQARetrieval",
         "KLUE-STS",
         "KorSTS",
         "STS17"
     ]
     ko_results = []
     for ko_data in ko_datas:
-        ko_results.append([ko_data, all_results['ko'][ko_data] * 100])
+        try:
+            ko_results.append([ko_data, all_results['ko'][ko_data] * 100])
+        except:
+            print(f"Error in getting results for {ko_data}")    
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(ko_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "ko_results.xlsx")
@@ -575,21 +611,24 @@ def read_results(result_dir: str):
         "XNLI",
         "IndicReviewsClusteringP2P",
         "SIB200ClusteringS2S",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "WikipediaRerankingMultilingual",
         "BelebeleRetrieval",
         "MintakaRetrieval",
-        "MIRACLRetrieval",
+        # "MIRACLRetrieval",
         "MLQARetrieval",
         "WikipediaRetrievalMultilingual",
-        "XPQARetrieval",
-        "XQuADRetrieval",
+        # "XPQARetrieval",
+        # "XQuADRetrieval",
         "IndicCrosslingualSTS",
         "SemRel24STS"
     ]
     hi_results = []
     for hi_data in hi_datas:
-        hi_results.append([hi_data, all_results['hi'][hi_data] * 100])
+        try:
+            hi_results.append([hi_data, all_results['hi'][hi_data] * 100])
+        except:
+            print(f"Error in getting results for {hi_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(hi_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "hi_results.xlsx")
@@ -602,17 +641,20 @@ def read_results(result_dir: str):
         "XNLIV2",
         "IndicReviewsClusteringP2P",
         "SIB200ClusteringS2S",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "WikipediaRerankingMultilingual",
         "BelebeleRetrieval",
         "IndicQARetrieval",
-        "MIRACLRetrieval",
+        # "MIRACLRetrieval",
         "WikipediaRetrievalMultilingual",
         "IndicCrosslingualSTS"
     ]
     bn_results = []
     for bn_data in bn_datas:
-        bn_results.append([bn_data, all_results['bn'][bn_data] * 100])
+        try:
+            bn_results.append([bn_data, all_results['bn'][bn_data] * 100])
+        except:
+            print(f"Error in getting results for {bn_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(bn_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "bn_results.xlsx")
@@ -626,16 +668,19 @@ def read_results(result_dir: str):
         "TeluguAndhraJyotiNewsClassification",
         "IndicReviewsClusteringP2P",
         "SIB200ClusteringS2S",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "BelebeleRetrieval",
         "IndicQARetrieval",
-        "MIRACLRetrieval",
+        # "MIRACLRetrieval",
         "IndicCrosslingualSTS",
         "SemRel24STS"
     ]
     te_results = []
     for te_data in te_datas:
-        te_results.append([te_data, all_results['te'][te_data] * 100])
+        try:
+            te_results.append([te_data, all_results['te'][te_data] * 100])
+        except:
+            print(f"Error in getting results for {te_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(te_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "te_results.xlsx")
@@ -649,12 +694,15 @@ def read_results(result_dir: str):
         "XNLI",
         "MasakhaNEWSClusteringP2P",
         "MasakhaNEWSClusteringS2S",
-        "MIRACLReranking",
-        "MIRACLRetrieval"
+        # "MIRACLReranking",
+        # "MIRACLRetrieval"
     ]
     sw_results = []
     for sw_data in sw_datas:
-        sw_results.append([sw_data, all_results['sw'][sw_data] * 100])
+        try:
+            sw_results.append([sw_data, all_results['sw'][sw_data] * 100])
+        except:
+            print(f"Error in getting results for {sw_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(sw_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "sw_results.xlsx")
@@ -667,13 +715,16 @@ def read_results(result_dir: str):
         "MasakhaNEWSClusteringP2P",
         "MasakhaNEWSClusteringS2S",
         "SIB200ClusteringS2S",
-        "MIRACLReranking",
+        # "MIRACLReranking",
         "BelebeleRetrieval",
-        "MIRACLRetrieval"
+        # "MIRACLRetrieval"
     ]
     yo_results = []
     for yo_data in yo_datas:
-        yo_results.append([yo_data, all_results['yo'][yo_data] * 100])
+        try:
+            yo_results.append([yo_data, all_results['yo'][yo_data] * 100])
+        except:
+            print(f"Error in getting results for {yo_data}")
     # Save to a xlsx file with each row as a dataset
     df = pd.DataFrame.from_records(yo_results, columns=["Dataset", "Accuracy"])
     df.to_excel(pathlib.Path(result_dir) / "yo_results.xlsx")
