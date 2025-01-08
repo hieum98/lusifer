@@ -2,13 +2,13 @@
 
 [![ArXiv](https://img.shields.io/badge/ArXiv-2025-fb1b1b.svg)](https://arxiv.org/abs/2501.00874)
 [![HF Paper](https://img.shields.io/badge/HF%20Paper-2025-b31b1b.svg)](https://huggingface.co/papers/2501.00874)
-[![HF Link](https://img.shields.io/badge/HF%20Model-LUSIFER-FFD21E.svg)]()
+[![HF Link](https://img.shields.io/badge/HF%20Model-LUSIFER-FFD21E.svg)](https://huggingface.co/Hieuman/LUSIFER)
 [![License](https://img.shields.io/badge/License-MIT-FD21E.svg)](LICENSE)
 
 LUSIFER is framework for bridging the gap between multilingual understanding and task-specific text embeddings without relying on explicit multilingual supervision. It does this by combining a multilingual encoder (providing a universal language foundation) with an LLM-based embedding model (optimized for embedding tasks), connected through a minimal set of trainable parameters. LUSIFER also introduces two stages of training process: 1) Alignment Training and 2) Representation Fine-tuning to optimize the model for zero-shot multilingual embeddings.
 
 <p align="center">
-  <img src="asserts/Model_overview.png" width="85%" alt="LUSIFER_figure1"/>
+  <img src="https://github.com/hieum98/lusifer/blob/main/asserts/Model_overview.png" width="85%" alt="LUSIFER_figure1"/>
 </p>
 
 ## Installation
@@ -106,7 +106,7 @@ To be concise, we suggest the following training process: reconstruction task on
 We propose a new benchmark for evaluating the model on the multilingual text embedding task. The benchmark includes 5 primary embedding tasks:  Classification, Clustering, Reranking, Retrieval, and Semantic Textual Similarity (STS) across 123 diverse datasets spanning 14 languages
 
 <p align="center">
-  <img src="asserts/Benchmark.png" width="85%" alt="Benchmark"/>
+  <img src="https://github.com/hieum98/lusifer/blob/main/asserts/Benchmark.png" width="85%" alt="Benchmark"/>
 </p>
 
 We support to evaluate model on various datasets by intergrating [`mteb`](https://github.com/embeddings-benchmark/mteb) library. To evaluate the model, run the following command:
@@ -120,7 +120,7 @@ python -m lusifer.eval.eval \
 We provide the results of LUSIFER on the multilingual text embedding benchmark in the following table. The results are reported in terms of the average main metric across all tasks and datasets.
 
 <p align="center">
-  <img src="asserts/Results.png" width="85%" alt="results"/>
+  <img src="https://github.com/hieum98/lusifer/blob/main/asserts/Results.png" width="85%" alt="results"/>
 </p>
 
 ## Citation
