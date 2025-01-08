@@ -258,7 +258,7 @@ fi
 
 export HF_HOME="/home/hieum/uonlp/hf_data_mteb"
 # 
-python -m src.eval.eval \
+python -m lusifer.eval.eval \
     --model_name_or_path sentence-transformers/sentence-t5-xxl \
     --output_folder st5 \
     --batch_size 512 \

@@ -1,4 +1,4 @@
-python -m src.eval.eval \
+python -m lusifer.eval.eval \
     --model_name_or_path princeton-nlp/sup-simcse-roberta-large \
     --output_folder simcse \
     --batch_size 512 \

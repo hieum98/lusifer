@@ -1,4 +1,4 @@
-python -m src.eval.eval \
+python -m lusifer.eval.eval \
     --model_name_or_path facebook/contriever \
     --output_folder contriever \
     --batch_size 512 \

@@ -1,4 +1,4 @@
-python -m src.eval.eval \
+python -m lusifer.eval.eval \
     --model_name_or_path sentence-transformers/gtr-t5-xxl \
     --output_folder /sensei-fs/users/chienn/hieu/lusifer/gtr \
     --batch_size 512 \
