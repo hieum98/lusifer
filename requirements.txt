@@ -1,5 +1,6 @@
 brotli
 torch
+transformers==4.45.0
 cffi
 faiss-cpu
 # flash-attn # Should be manually installed  
