@@ -404,7 +404,7 @@ class Lusifer(
                     raise NotImplementedError(f"Connection type {self.connection_type} not implemented")
                 with torch.autocast(device_type=sentence_representation.device.type, dtype=self.model_dtype):
                     projected_representation = self.output_projection(sentence_representation) # (batch_size, hidden_size)
-                return {'reps': sentence_representation, 'projection': projected_representation}
+                return {'reps': projected_representation, 'projection': projected_representation}
         else:
             if lm_labels is None:
                 lm_labels = llm_input_ids.clone()
