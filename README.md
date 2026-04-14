@@ -1,8 +1,9 @@
-# *LUSIFER: Language Universal Space Integration for Enhanced Multilingual Embeddings with Large Language Models*
+# *LUSIFER: Language Universal Space Integration for Enhanced Multilingual Embeddings with Large Language Models* (SIGIR 2025)
 
 [![ArXiv](https://img.shields.io/badge/ArXiv-2025-fb1b1b.svg)](https://arxiv.org/abs/2501.00874)
 [![HF Paper](https://img.shields.io/badge/HF%20Paper-2025-b31b1b.svg)](https://huggingface.co/papers/2501.00874)
 [![HF Link](https://img.shields.io/badge/HF%20Model-LUSIFER-FFD21E.svg)](https://huggingface.co/Hieuman/LUSIFER)
+[![DOI](https://img.shields.io/badge/DOI-10.1145/3726302.3730029-blue.svg)](https://doi.org/10.1145/3726302.3730029)
 [![License](https://img.shields.io/badge/License-MIT-FD21E.svg)](LICENSE)
 
 LUSIFER is framework for bridging the gap between multilingual understanding and task-specific text embeddings without relying on explicit multilingual supervision. It does this by combining a multilingual encoder (providing a universal language foundation) with an LLM-based embedding model (optimized for embedding tasks), connected through a minimal set of trainable parameters. LUSIFER also introduces two stages of training process: 1) Alignment Training and 2) Representation Fine-tuning to optimize the model for zero-shot multilingual embeddings.
@@ -124,17 +125,26 @@ We provide the results of LUSIFER on the multilingual text embedding benchmark i
 </p>
 
 ## Citation
-If you use LUSIFER in your research, please cite the following paper:
+If you use LUSIFER in your research, please cite [our SIGIR 2025 paper](https://doi.org/10.1145/3726302.3730029):
 ```bibtex
-@misc{man2025lusiferlanguageuniversalspace,
-      title={LUSIFER: Language Universal Space Integration for Enhanced Multilingual Embeddings with Large Language Models}, 
-      author={Hieu Man and Nghia Trung Ngo and Viet Dac Lai and Ryan A. Rossi and Franck Dernoncourt and Thien Huu Nguyen},
-      year={2025},
-      eprint={2501.00874},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2501.00874}, 
+@inproceedings{10.1145/3726302.3730029,
+    author = {Man, Hieu and Ngo, Nghia Trung and Dac Lai, Viet and Rossi, Ryan A. and Dernoncourt, Franck and Huu Nguyen, Thien},
+    title = {LUSIFER: Language Universal Space Integration for Enhanced Representation in Multilingual Text Embedding Models},
+    year = {2025},
+    isbn = {9798400715921},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/3726302.3730029},
+    doi = {10.1145/3726302.3730029},
+    abstract = {Recent advancements in large language models (LLMs) based embedding models have established new state-of-the-art benchmarks for text embedding tasks, particularly in dense vector-based retrieval. However, these models predominantly focus on English, leaving multilingual embedding capabilities largely unexplored. To address this limitation, we present LUSIFER, a novel zero-shot approach that adapts LLM-based embedding models for multilingual tasks without requiring multilingual supervision. LUSIFER's architecture combines a multilingual encoder, serving as a language-universal learner, with an LLM-based embedding model optimized for embedding-specific tasks. These components are seamlessly integrated through a minimal set of trainable parameters that act as a connector, effectively transferring the multilingual encoder's language understanding capabilities to the specialized embedding model. Additionally, to comprehensively evaluate multilingual embedding performance, we introduce a new benchmark encompassing 5 primary embedding tasks, 123 diverse datasets, and coverage across 14 languages. Extensive experimental results demonstrate that LUSIFER significantly enhances the multilingual performance across various embedding tasks, particularly for medium and low-resource languages, without requiring explicit multilingual training data. The code and dataset for training are available at: https://github.com/hieum98/lusifer},
+    booktitle = {Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval},
+    pages = {1360–1370},
+    numpages = {11},
+    keywords = {large language models, multilingual benchmarks, multilingual text embedding, representation learning, zero-shot learning},
+    location = {Padua, Italy},
+    series = {SIGIR '25}
 }
+
 ```
 
 ## Bugs or questions?
